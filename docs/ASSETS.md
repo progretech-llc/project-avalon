@@ -1,5 +1,7 @@
 # Asset provenance
 
+Current distribution terms are in [LICENSING.md](../LICENSING.md), [ASSET-LICENSE.md](../ASSET-LICENSE.md) and [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). The phase entries below record development history. The live Progre appearance is now procedural neon geometry; the reference-derived PNG remains only as a compatibility asset. Host fonts, external model weights and user-provided Constellation scene/foreground data are not bundled as reusable project assets.
+
 | Asset | Source | Use | Distribution status |
 | --- | --- | --- | --- |
 | `wide_cinematic_poster_mockup_layout_of_a_desktop.png` | Owner-supplied project file and chat reference, 2026-10-18 | Visual target/reference; original preserved | Owner-supplied reference; no third-party license inferred |
@@ -35,6 +37,6 @@ The native and UI PNGs under `docs/evidence/phase-3` are qualification screensho
 
 `reference/progre-owner-reference.png` is a scoped copy of the latest artwork supplied by the owner in this session (`codex-clipboard-9giiSg.png`); the original clipboard file remains intact. Progre has no torso: the lateral spheres are eyes, the white slashes are nose and the enclosed zigzag is mouth, with tiny hands/feet directly attached.
 
-`static/art/progre.png` and identical `gnome-extension/progre.png` are a transparent background extraction prepared with the built-in Imagegen tool from that reference. The selected generated source is preserved at `/home/progretech/.codex/generated_images/01a1502f-f4e5-70b3-84e6-d0fca69ca723/exec-f9cba0db-e3e3-4a85-b8b0-736bdf77e66a.png`. Runtime display uses bounded shared GPU texture animation; this is a reference-derived 2.5D asset, not an original 3D reconstruction. Generated previews in `static/avatars` are captures of the actual shared renderer. Background star dots were removed from all variants.
+`static/art/progre.png` and identical `gnome-extension/progre.png` are a transparent background extraction prepared with the built-in Imagegen tool from that reference. The selected generated source was retained in private generation storage; the scoped output copies are the versioned compatibility assets. Runtime display uses bounded shared GPU texture animation; this is a reference-derived 2.5D asset, not an original 3D reconstruction. Generated previews in `static/avatars` are captures of the actual shared renderer. Background star dots were removed from all variants.
 
 OpenCV is pinned to `opencv-python-headless==4.13.0.92` because the previously installed 5.0 wheel lacked `CascadeClassifier`; real camera capture and face-driver initialization were rechecked. [Upstream package documentation](https://pypi.org/project/opencv-python-headless/) documents the Haar cascade interface.
