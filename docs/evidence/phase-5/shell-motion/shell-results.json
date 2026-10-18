@@ -1,0 +1,75 @@
+{
+  "avalon_start": {
+    "owner": "avalon@progretech.com",
+    "avalon": {
+      "state": 1,
+      "count": 1
+    },
+    "constellation": {
+      "state": 2,
+      "count": 0
+    },
+    "monitors": 1,
+    "behindWindows": true,
+    "clickThrough": true
+  },
+  "avalon_to_constellation": {
+    "owner": "factory-observatory@progretech.com",
+    "avalon": {
+      "state": 2,
+      "count": 0
+    },
+    "constellation": {
+      "state": 1,
+      "count": 1
+    },
+    "monitors": 1,
+    "behindWindows": true,
+    "clickThrough": true
+  },
+  "constellation_to_avalon": {
+    "owner": "avalon@progretech.com",
+    "avalon": {
+      "state": 1,
+      "count": 1
+    },
+    "constellation": {
+      "state": 2,
+      "count": 0
+    },
+    "monitors": 1,
+    "behindWindows": true,
+    "clickThrough": true
+  },
+  "direct_enable_restores_power_preserves_appearance": true,
+  "concurrent_starts": 10,
+  "resource_cleanup": true,
+  "reenable_after_stop": {
+    "owner": "avalon@progretech.com",
+    "avalon": {
+      "state": 1,
+      "count": 1
+    },
+    "constellation": {
+      "state": 2,
+      "count": 0
+    },
+    "monitors": 1,
+    "behindWindows": true,
+    "clickThrough": true
+  },
+  "rendering": {
+    "owner": "avalon@progretech.com",
+    "avalon": {
+      "state": 1,
+      "count": 1
+    },
+    "constellation": {
+      "state": 2,
+      "count": 0
+    },
+    "monitors": 1,
+    "behindWindows": true,
+    "clickThrough": true
+  }
+}

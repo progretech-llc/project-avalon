@@ -3,7 +3,6 @@ import Cogl from "gi://Cogl";
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import GObject from "gi://GObject";
-import GdkPixbuf from "gi://GdkPixbuf";
 import Shell from "gi://Shell";
 import St from "gi://St";
 import Meta from "gi://Meta";
@@ -51,18 +50,15 @@ const DEFAULTS = {
 const PresenceContent = GObject.registerClass(
   { Implements: [Clutter.Content] },
   class PresenceContent extends GObject.Object {
-    _init(portraitPath) {
+    _init() {
       super._init();
       this.pipeline = Cogl.Pipeline.new(
         global.stage.context.get_backend().get_cogl_context(),
       );
-      const pixels = GdkPixbuf.Pixbuf.new_from_file(portraitPath);
-      const texture = Cogl.Texture2D.new_from_data(global.stage.context.get_backend().get_cogl_context(),
-        pixels.width, pixels.height, Cogl.PixelFormat.RGBA_8888, pixels.rowstride, pixels.get_pixels());
-      this.pipeline.set_layer_texture(0, texture);
+      this.pipeline.set_layer_null_texture(0);
       const snippet = Cogl.Snippet.new(
         Cogl.SnippetHook.FRAGMENT,
-        "vec4 avPortrait(vec2 p){return texture2D(cogl_sampler0,vec2(p.x,1.0-p.y));}\nuniform float u_time,u_aspect,u_state,u_avatar,u_quality;\n" + source,
+        "uniform float u_time,u_aspect,u_state,u_avatar,u_quality;\n" + source,
         "",
       );
       snippet.set_replace(
@@ -323,7 +319,7 @@ export default class Avalon extends Extension {
         }),
       });
       canvas.set_size(monitor.width, monitor.height);
-      const effect = new PresenceContent(this.path + "/progre.png");
+      const effect = new PresenceContent();
       canvas.set_content(effect);
       group.add_child(canvas);
       group._canvas = canvas;

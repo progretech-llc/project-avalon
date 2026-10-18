@@ -6,10 +6,12 @@ import json
 import math
 import os
 import signal
+import select
 import subprocess
 import threading
 import time
 from pathlib import Path
+from speech import DEFAULTS as VOICE_DEFAULTS, validate as validate_voice
 
 ROOT = Path(__file__).resolve().parent
 WORKER = [str(ROOT / ".media-venv/bin/python"), str(ROOT / "media_worker.py")]
@@ -95,7 +97,10 @@ class Media:
             "output": "default",
             "camera": "",
             "spoken_replies": True,
-            "listener_phrase": "hey progre",
+            "listener_phrase": "hey avalon",
+            "speaker_lock": True,
+            "followup_replies": False,
+            **VOICE_DEFAULTS,
         }
         saved = controller.store.get("devices", {})
         self.settings = {key: saved.get(key, value) for key, value in defaults.items()}
@@ -110,9 +115,16 @@ class Media:
             "level": 0.0,
             "gaze": [0.0, 0.0],
             "notice": "",
+            "focus": "none",
+            "voice_owner": False,
+            "speech_latency_ms": None,
+            "speech_error": "",
         }
         self.epoch = 0
         self.listener = None
+        self.voice_server = None
+        self.voice_socket = self.path / "voice.sock"
+        self.voice_socket.unlink(missing_ok=True)
         self.awake = False
         self.followup = 0.0
         self.listener_paused = True
@@ -146,13 +158,25 @@ class Media:
             "camera_starting": self.camera is not None and not self.state["camera"],
             "settings": dict(self.settings),
             "locked": self.locked,
-            "speech_ready": (ROOT / ".media-venv/bin/piper").exists()
-            and (self.path / "models/whisper-base.en/model.bin").exists()
-            and (
-                self.path
-                / "models/piper/en/en_US/ljspeech/medium/en_US-ljspeech-medium.onnx"
-            ).exists(),
+            "speech_ready": self._speech_installed(),
         }
+
+    def _speech_installed(self):
+        models = self.path / "models"
+        files = [models / "whisper-base.en/model.bin"]
+        if self.settings["voice_engine"] == "kokoro":
+            files += [
+                models / "kokoro/kokoro-v1.0.onnx",
+                models / "kokoro/voices-v1.0.bin",
+            ]
+        else:
+            files += [
+                ROOT / ".media-venv/bin/piper",
+                models / "piper/en/en_US/ljspeech/medium/en_US-ljspeech-medium.onnx",
+            ]
+        if self.settings["speaker_lock"]:
+            files += [models / "speaker/nemo_en_speakerverification_speakernet.onnx"]
+        return all(p.exists() for p in files)
 
     def _changed(self):
         self.control.publish()
@@ -204,6 +228,14 @@ class Media:
                 )
         if type(candidate["spoken_replies"]) is not bool:
             raise ValueError("Choose whether voice replies are enabled")
+        if any(
+            type(candidate[key]) is not bool
+            for key in ("speaker_lock", "followup_replies")
+        ):
+            raise ValueError(
+                "Choose whether speaker matching and follow-ups are enabled"
+            )
+        validate_voice(candidate)
         phrase = candidate["listener_phrase"]
         if (
             not isinstance(phrase, str)
@@ -378,12 +410,20 @@ class Media:
         if not self.snapshot()["speech_ready"]:
             raise ValueError("Install local voice components before playback")
         self.stop_audio()
+        self.state["speech_error"] = ""
+        self._ensure_voice_server()
         epoch = self.epoch
         targets = self._target("output")
         worker = self.synthesis = self._spawn(
-            [*WORKER, "speak"], stdin=subprocess.PIPE, stdout=subprocess.PIPE
+            [*WORKER, "speak", str(self.voice_socket)],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
         )
-        worker.stdin.write(text[:4000].encode())
+        worker.stdin.write(
+            json.dumps(
+                {"text": text[:4000], **{k: self.settings[k] for k in VOICE_DEFAULTS}}
+            ).encode()
+        )
         worker.stdin.close()
         self.state["notice"] = "Preparing local speech…"
         self._changed()
@@ -393,8 +433,10 @@ class Media:
 
     def _play(self, worker, targets, epoch):
         player = None
+        started = time.monotonic()
+        meter_due = 0.0
         try:
-            while chunk := worker.stdout.read(2204):
+            while chunk := worker.stdout.read(2400):
                 with self.control.lock:
                     if epoch != self.epoch:
                         return
@@ -405,13 +447,13 @@ class Media:
                                 "pw-play",
                                 "--raw",
                                 "--rate",
-                                "22050",
+                                "24000",
                                 "--channels",
                                 "1",
                                 "--format",
                                 "s16",
                                 "--latency",
-                                "50ms",
+                                "150ms",
                                 *targets,
                                 "-",
                             ],
@@ -419,18 +461,36 @@ class Media:
                         )
                         os.set_blocking(player.stdin.fileno(), False)
                         self.state.update(speaking=True, notice="")
+                        self.state["speech_latency_ms"] = round(
+                            (time.monotonic() - started) * 1000
+                        )
                     if player.poll() is not None:
                         raise ValueError(
                             "Audio output disconnected. Check the selected speaker."
                         )
+                pending = memoryview(chunk)
+                deadline = time.monotonic() + 2
+                while pending:
+                    if epoch != self.epoch:
+                        return
+                    if time.monotonic() > deadline:
+                        raise ValueError(
+                            "Audio output stalled. Check the selected speaker and retry."
+                        )
+                    if not select.select([], [player.stdin], [], 0.1)[1]:
+                        continue
                     try:
-                        if os.write(player.stdin.fileno(), chunk) != len(chunk):
-                            raise ValueError("Audio output stalled; playback stopped.")
+                        pending = pending[os.write(player.stdin.fileno(), pending) :]
                     except BlockingIOError:
-                        raise ValueError("Audio output stalled; playback stopped.")
+                        continue
+                with self.control.lock:
+                    if epoch != self.epoch:
+                        return
                     self.state["level"] = rms(chunk)
-                    self._changed()
-                time.sleep(len(chunk) / 44100)
+                    if time.monotonic() >= meter_due:
+                        self._changed()
+                        meter_due = time.monotonic() + 0.15
+                # PipeWire backpressure clocks PCM; sleeping here creates underruns.
             if player:
                 player.stdin.close()
                 player.wait(timeout=5)
@@ -446,6 +506,7 @@ class Media:
                         if isinstance(exc, ValueError)
                         else "Playback stopped. Check the selected output and retry."
                     )
+                    self.state["speech_error"] = self.state["notice"]
         finally:
             terminate(player)
             terminate(worker)
@@ -453,7 +514,27 @@ class Media:
                 if epoch == self.epoch:
                     self.player = self.synthesis = None
                     self.state.update(speaking=False, level=0.0)
+                    if not self.awake:
+                        self._stop_voice_server()
                     self._changed()
+
+    def _ensure_voice_server(self):
+        if self.voice_server is None or self.voice_server.poll() is not None:
+            self.voice_socket.unlink(missing_ok=True)
+            self.voice_server = self._spawn(
+                [
+                    *WORKER,
+                    "voice-server",
+                    str(self.voice_socket),
+                    self.settings["voice_engine"],
+                ],
+                stdout=subprocess.DEVNULL,
+            )
+
+    def _stop_voice_server(self):
+        worker, self.voice_server = self.voice_server, None
+        terminate(worker)
+        self.voice_socket.unlink(missing_ok=True)
 
     def enable_camera(self):
         self._unlocked()
@@ -483,8 +564,10 @@ class Media:
                         camera=bool(event.get("camera")),
                         gaze=event.get("gaze", [0.0, 0.0]),
                         face=bool(event.get("face")),
-                        notice="",
+                        focus=event.get("focus", "none"),
                     )
+                    if self.state["notice"] == "Opening camera…":
+                        self.state["notice"] = ""
                     self._changed()
         finally:
             with self.control.lock:
@@ -538,17 +621,19 @@ class Media:
         terminate(proc)
         self.frame.unlink(missing_ok=True)
         self.frame.with_suffix(".tmp").unlink(missing_ok=True)
-        self.state.update(camera=False, face=False, gaze=[0.0, 0.0])
+        self.state.update(camera=False, face=False, focus="none", gaze=[0.0, 0.0])
         self._changed()
 
     def stop(self):
         self.awake = False
+        self.state["voice_owner"] = False
         self.listener_ready = False
         self.followup = 0.0
         worker, self.listener = self.listener, None
         terminate(worker)
         self.stop_audio()
         self.stop_camera()
+        self._stop_voice_server()
 
     def wake(self):
         self._unlocked()
@@ -581,13 +666,18 @@ class Media:
         self.stop()
         try:
             self.enable_camera()
+            self._ensure_voice_server()
             self.listener_paused = True
             worker = self.listener = self._spawn(
                 [
                     *WORKER,
                     "listen",
                     json.dumps(
-                        {"phrase": self.settings["listener_phrase"], "target": target}
+                        {
+                            "phrase": self.settings["listener_phrase"],
+                            "target": target,
+                            "speaker_lock": self.settings["speaker_lock"],
+                        }
                     ),
                 ],
                 stdin=subprocess.PIPE,
@@ -638,6 +728,14 @@ class Media:
                         self.listener_ready = True
                         self._pause_listener(False)
                         continue
+                    if "owner" in event:
+                        self.state["voice_owner"] = event["owner"] is True
+                    if event.get("speaker_rejected"):
+                        self.state["notice"] = (
+                            "Another or uncertain voice was ignored. Say your listener phrase clearly; sleep resets the owner."
+                        )
+                        self._changed()
+                        continue
                     if "level" in event and not self.listener_paused:
                         self.state["level"] = max(0.0, min(1.0, float(event["level"])))
                         self._changed()
@@ -649,8 +747,17 @@ class Media:
                         event.get("addressed") or time.monotonic() < self.followup
                     ):
                         continue
+                    if (
+                        self.settings["speaker_lock"]
+                        and event.get("owner_match") is not True
+                    ):
+                        continue
                     self._pause_listener(True)
-                    self.followup = float("inf")
+                    self.followup = (
+                        float("inf")
+                        if event.get("bare") or self.settings["followup_replies"]
+                        else 0.0
+                    )
                     if event.get("bare"):
                         self.speak("Yes? I'm listening.")
                     else:

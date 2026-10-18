@@ -9,7 +9,7 @@ import urllib.request
 from pathlib import Path
 
 
-def atomic_json(path, value):
+def atomic_json(path, value, *, durable=True):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     temporary = path.with_name("." + path.name + "." + secrets.token_hex(6))
@@ -18,7 +18,8 @@ def atomic_json(path, value):
         with os.fdopen(fd, "w") as stream:
             json.dump(value, stream)
             stream.flush()
-            os.fsync(stream.fileno())
+            if durable:
+                os.fsync(stream.fileno())
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
@@ -105,6 +106,10 @@ def configure(state, model, workspace=None, mode="chat", commands=False, vision=
             }
         },
     }
+    if mode == "chat":
+        config["provider"]["ollama"]["models"][model]["options"] = {
+            "reasoningEffort": "none"
+        }
     if vision:
         config["provider"]["ollama"]["models"][model].update(
             attachment=True, modalities={"input": ["text", "image"], "output": ["text"]}

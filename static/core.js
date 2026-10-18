@@ -60,7 +60,7 @@ export function mountCore(canvas) {
     const vs = compile(gl.VERTEX_SHADER, vertex),
       fs = compile(
         gl.FRAGMENT_SHADER,
-        `precision highp float;varying vec2 uv;uniform sampler2D u_portrait;vec4 avPortrait(vec2 p){return texture2D(u_portrait,vec2(p.x,1.0-p.y));}uniform float u_time,u_aspect,u_state,u_avatar,u_quality;${source}\nvoid main(){gl_FragColor=vec4(avalon(uv,u_aspect,u_time,u_state,u_avatar,u_quality),1.);}`,
+        `precision highp float;varying vec2 uv;uniform float u_time,u_aspect,u_state,u_avatar,u_quality;${source}\nvoid main(){gl_FragColor=vec4(avalon(uv,u_aspect,u_time,u_state,u_avatar,u_quality),1.);}`,
       );
     gl.attachShader(program, vs);
     gl.attachShader(program, fs);
@@ -70,14 +70,6 @@ export function mountCore(canvas) {
     if (!gl.getProgramParameter(program, gl.LINK_STATUS))
       throw Error("Avatar program could not link");
     gl.useProgram(program);
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, portrait);
-    gl.uniform1i(gl.getUniformLocation(program, "u_portrait"), 0);
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(
@@ -156,17 +148,11 @@ export function mountCore(canvas) {
       new CustomEvent("avatar-error", { detail: error.message }),
     );
   }
-  sharedSource ??= fetch("/static/presence.glsl?v=4.4").then((r) => {
+  sharedSource ??= fetch("/static/presence.glsl?v=5.2").then((r) => {
     if (!r.ok) throw Error("Avatar shader is unavailable");
     return r.text();
   });
-  const portrait = new Image();
-  const portraitReady = new Promise((resolve, reject) => {
-    portrait.onload = resolve;
-    portrait.onerror = () => reject(Error("Progre artwork is unavailable"));
-    portrait.src = "/static/art/progre.png?v=4.4";
-  });
-  Promise.all([sharedSource, portraitReady]).then(([source]) => initialize(source)).catch(failed);
+  sharedSource.then(initialize).catch(failed);
   frame = requestAnimationFrame(draw);
   reduced.addEventListener("change", () => {
     dirty = true;

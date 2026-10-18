@@ -1,0 +1,18 @@
+{
+  "ethereal": {
+    "native_rendered": true,
+    "time_separated_gaze_and_speech_frames_differ": true
+  },
+  "sentinel": {
+    "native_rendered": true,
+    "time_separated_gaze_and_speech_frames_differ": true
+  },
+  "mascot": {
+    "native_rendered": true,
+    "time_separated_gaze_and_speech_frames_differ": true
+  },
+  "abstract": {
+    "native_rendered": true,
+    "time_separated_gaze_and_speech_frames_differ": true
+  }
+}

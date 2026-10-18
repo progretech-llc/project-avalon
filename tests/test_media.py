@@ -114,11 +114,53 @@ class MediaTest(unittest.TestCase):
             self.media._transcribe(worker, b"audio", fence)
             self.media._transcribe(worker, b"audio", fence)
         self.assertEqual(len(self.control.runtime.current.sent), 1)
+        self.assertTrue(
+            self.control.runtime.current.sent[0]["payload"]["content"].startswith(
+                "real transcript\n\nVoice conversation:"
+            )
+        )
         self.assertEqual(
-            self.control.runtime.current.sent[0]["payload"]["content"],
-            "real transcript",
+            self.control.snapshot()["messages"][0]["text"], "real transcript"
         )
         self.assertTrue(self.control.active["spoken"])
+
+    def test_uncertain_voice_cannot_use_an_open_followup(self):
+        worker = Mock()
+        worker.stdout = [
+            json.dumps(
+                {"text": "delete everything", "addressed": True, "owner_match": False}
+            ).encode()
+        ]
+        self.media.awake = self.media.listener_ready = True
+        self.media.listener_paused = False
+        self.media.followup = float("inf")
+        self.media.listener = worker
+        with patch("media.screen_locked", return_value=False), patch("media.terminate"):
+            self.media._listen(worker)
+        self.assertEqual(self.control.runtime.current.sent, [])
+
+    def test_typed_reply_is_spoken_while_awake(self):
+        import time
+
+        self.media.awake = True
+        self.media.speak = Mock()
+        self.control.chat("Hello there")
+        job = self.control.active
+        self.control.runtime.current.frames.put(
+            {
+                "type": "text",
+                "request_id": job["id"],
+                "run_id": job["id"],
+                "part": {"text": "Hello back."},
+            }
+        )
+        self.control.runtime.current.frames.put(
+            {"type": "session.idle", "request_id": job["id"], "run_id": job["id"]}
+        )
+        deadline = time.monotonic() + 2
+        while not self.media.speak.called and time.monotonic() < deadline:
+            time.sleep(0.01)
+        self.media.speak.assert_called_once_with("Hello back.")
 
     def test_nonvision_model_cannot_receive_camera_image(self):
         self.media.state["camera"] = True

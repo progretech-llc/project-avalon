@@ -7,8 +7,8 @@
     <title>Project Avalon</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/static/icons/avalon-192.png" />
-    <link rel="stylesheet" href="/static/app.css?v=4.4" />
-    <script src="/static/app.js?v=4.4" type="module"></script>
+    <link rel="stylesheet" href="/static/app.css?v=5.2" />
+    <script src="/static/app.js?v=5.2" type="module"></script>
   </head>
   <body data-status="disconnected">
     <svg class="icon-defs" aria-hidden="true">
@@ -358,8 +358,8 @@
             <section>
               <h3>Voice</h3>
               <label for="listener-phrase">Listener phrase</label>
-              <input id="listener-phrase" type="text" maxlength="80" value="hey progre" required />
-              <p class="field-note">Wake up enables the microphone, speakers and camera together. Say your phrase, then a command. Progre listens for a follow-up for ten seconds after replying. Go to sleep releases all three devices.</p>
+              <input id="listener-phrase" type="text" maxlength="80" value="hey avalon" required />
+              <p class="field-note">Wake up enables the microphone, speakers and camera together. Say your phrase, then a command. A bare phrase opens one command window. Further replies require the phrase again unless you enable follow-ups. Go to sleep releases all three devices.</p>
               <label for="audio-input">Microphone</label
               ><select id="audio-input">
                 <option value="default">Follow Ubuntu default input</option>
@@ -375,13 +375,33 @@
                 </option></select
               ><label class="checkbox-label"
                 ><input id="spoken-replies" type="checkbox" checked /><span
-                  >Speak replies to voice commands<small
-                    >English speech recognition and Piper synthesis run locally
-                    on CPU. No cloud speech provider or second conversational
+                  >Speak voice commands and replies while awake<small
+                    >Speech recognition and synthesis run locally on CPU. No cloud speech provider or second conversational
                     model.</small
                   ></span
                 ></label
               >
+            </section>
+            <section>
+              <h3>Voice character</h3>
+              <label for="voice-engine">Speech engine</label>
+              <select id="voice-engine"><option value="kokoro">Kokoro</option><option value="piper">Piper</option></select>
+              <label for="voice-style">Voice</label>
+              <select id="voice-style"><option value="female">Female</option><option value="male">Male</option><option value="robotic">Robotic</option></select>
+              <label for="voice-pitch">Pitch <output id="pitch-value">0 semitones</output></label>
+              <input id="voice-pitch" type="range" min="-12" max="12" step="1" value="0" />
+              <label for="voice-speed">Speed <output id="speed-value">1.00×</output></label>
+              <input id="voice-speed" type="range" min="0.65" max="1.6" step="0.05" value="1" />
+              <p class="field-note">Pitch changes keep the speaking pace. Kokoro provides male and female voices; Robotic adds a voice effect. Apply changes, then preview through your selected speakers.</p>
+              <button id="preview-voice" type="button" class="quiet">Preview voice</button>
+              <p id="speech-status" class="field-note" role="status"></p>
+            </section>
+            <section>
+              <h3>Attention</h3>
+              <label class="checkbox-label"><input id="speaker-lock" type="checkbox" checked /><span>Match the first addressed voice<small>One voice owns the awake session. The local signature stays in memory and is forgotten on sleep. Matching reduces accidental replies; it is not authentication.</small></span></label>
+              <label class="checkbox-label"><input id="followup-replies" type="checkbox" /><span>Allow ten-second follow-ups<small>Off by default so conversations with others need the listener phrase again. Follow-ups still require the same voice when matching is enabled.</small></span></label>
+              <button id="reset-voice-owner" type="button" class="quiet">Reset voice owner</button>
+              <p id="voice-owner-status" class="field-note" role="status">No session voice yet.</p>
             </section>
             <section>
               <h3>Vision</h3>
@@ -390,7 +410,7 @@
                 <option value="">Choose a camera</option>
               </select>
               <p class="field-note">
-                Local face positions guide the avatar’s gaze. Camera images stay
+                The avatar follows a face, then foreground movement when no face is visible. Camera images stay
                 in one private, replaceable frame. Each spoken command while the
                 camera is enabled includes one fresh image for your selected vision
                 model. Sending a view also adds that

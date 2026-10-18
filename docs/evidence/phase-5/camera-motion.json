@@ -1,0 +1,12 @@
+{
+  "synthetic_foreground_left": [
+    -0.23631249999999998,
+    0.030083333333333354
+  ],
+  "synthetic_foreground_right": [
+    0.01321022500000002,
+    0.06029903333333338
+  ],
+  "motion_detected": true,
+  "raw_frames_saved": false
+}

@@ -32,6 +32,9 @@ def listen():
         local_files_only=True,
     )
     vad = get_vad_model()
+    from speaker import VoiceOwner
+
+    owner = VoiceOwner() if options.get("speaker_lock", True) else None
     paused = threading.Event()
     paused.set()
     chunks = queue.Queue(maxsize=32)
@@ -110,10 +113,18 @@ def listen():
             if speech or data:
                 data.extend(chunk)
                 quiet = quiet + 1 if not speech else 0
-            if data and (quiet >= 25 or len(data) >= 480000):
+            if data and (quiet >= 9 or len(data) >= 480000):
                 audio = np.frombuffer(data, dtype="<i2").astype(np.float32) / 32768
                 data.clear()
                 quiet = 0
+                embedding = owner.embedding(audio) if owner else None
+                if (
+                    owner
+                    and owner.owner is not None
+                    and not owner.accepts(embedding, False)
+                ):
+                    emit({"speaker_rejected": True, "owner": True})
+                    continue
                 segments, _ = model.transcribe(
                     audio,
                     language="en",
@@ -125,10 +136,19 @@ def listen():
                 )
                 text = " ".join(s.text.strip() for s in segments).strip()
                 if text and not paused.is_set():
+                    addressed = decorator.starts_with_wake_word(text)
+                    matched = owner.accepts(embedding, addressed) if owner else True
+                    if owner and addressed and not matched:
+                        emit(
+                            {"speaker_rejected": True, "owner": owner.owner is not None}
+                        )
+                        continue
                     emit(
                         {
                             "text": text[:16000],
-                            "addressed": decorator.starts_with_wake_word(text),
+                            "addressed": addressed,
+                            "owner_match": matched,
+                            "owner": bool(owner and owner.owner is not None),
                             "bare": decorator.is_bare_wake_phrase(text),
                         }
                     )
@@ -195,30 +215,35 @@ def transcribe():
 
 
 def speak():
-    from hal.drivers.voice.tts.piper import PiperTTSBackend
+    from speech import DEFAULTS, client, Synthesizer
 
-    voice_dir = MODELS / "piper/en/en_US/ljspeech/medium"
-    backend = PiperTTSBackend(
-        voice="en_US-ljspeech-medium",
-        voices_dir=str(voice_dir),
-        binary=str(ROOT / ".media-venv/bin/piper"),
+    data = sys.stdin.read(65537)
+    request = (
+        {**DEFAULTS, **json.loads(data)}
+        if data.startswith("{")
+        else {**DEFAULTS, "text": data[:4000]}
     )
-    text = sys.stdin.read(4001)
-    if len(text) > 4000:
-        raise ValueError("Speech text is too long")
-    if not backend.available:
-        raise RuntimeError("Local voice is not installed")
-    try:
-        for chunk in backend.stream_pcm(text, "", "", 1.0):
-            sys.stdout.buffer.write(chunk)
+    path = (
+        Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / ".runtime/media/voice.sock"
+    )
+    if len(sys.argv) > 2:
+        deadline = time.monotonic() + 20
+        while not path.exists():
+            if time.monotonic() > deadline:
+                raise RuntimeError("Local voice did not become ready")
+            time.sleep(0.05)
+    if path.exists():
+        client(request, path)
+    else:
+        for pcm in Synthesizer().chunks(request):
+            sys.stdout.buffer.write(pcm)
             sys.stdout.buffer.flush()
-    finally:
-        # The upstream backend maintains a warm spare. This one-shot worker owns
-        # it; reap it here instead of leaving an idle voice process behind.
-        with backend._spare_lock:
-            if backend._spare is not None:
-                backend._spare.kill()
-                backend._spare.wait(timeout=2)
+
+
+def voice_server():
+    from speech import serve
+
+    serve()
 
 
 def camera():
@@ -233,9 +258,9 @@ def camera():
     camera = HostVideoCaptureDevice(
         VideoCaptureDeviceInfo(device_id=path, max_width=640, max_height=480, fps=15)
     )
-    detector = cv2.CascadeClassifier(
-        cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-    )
+    from tracking import FocusTracker
+
+    tracker = FocusTracker()
     stopped = threading.Event()
     signal.signal(signal.SIGTERM, lambda *_: stopped.set())
     gaze = [0.0, 0.0]
@@ -252,18 +277,7 @@ def camera():
                 )
             if frame is None:
                 continue
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = detector.detectMultiScale(
-                gray, scaleFactor=1.2, minNeighbors=5, minSize=(48, 48)
-            )
-            target = [0.0, 0.0]
-            if len(faces):
-                x, y, w, h = max(faces, key=lambda r: r[2] * r[3])
-                target = [
-                    1 - 2 * (x + w / 2) / frame.shape[1],
-                    1 - 2 * (y + h / 2) / frame.shape[0],
-                ]
-            gaze = [a + (b - a) * 0.22 for a, b in zip(gaze, target)]
+            gaze, focus = tracker.update(frame)
             # One replaceable private frame for an explicit selected-model vision
             # request; never send a camera frame to the browser/compositor.
             if time.monotonic() - last_snapshot > 1:
@@ -276,7 +290,14 @@ def camera():
                     tmp.replace(snapshot)
                 last_snapshot = time.monotonic()
             print(
-                json.dumps({"camera": True, "gaze": gaze, "face": bool(len(faces))}),
+                json.dumps(
+                    {
+                        "camera": True,
+                        "gaze": gaze,
+                        "face": focus == "face",
+                        "focus": focus,
+                    }
+                ),
                 flush=True,
             )
     finally:
@@ -286,6 +307,10 @@ def camera():
 
 
 if __name__ == "__main__":
-    {"transcribe": transcribe, "speak": speak, "camera": camera, "listen": listen}[
-        sys.argv[1]
-    ]()
+    {
+        "transcribe": transcribe,
+        "speak": speak,
+        "camera": camera,
+        "listen": listen,
+        "voice-server": voice_server,
+    }[sys.argv[1]]()

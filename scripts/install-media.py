@@ -3,6 +3,8 @@
 
 import json
 import subprocess
+import hashlib
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -64,6 +66,24 @@ print('Installed pinned local speech/CV components. Camera and microphone remain
         check=True,
     )
     request.unlink()
+    extra = json.loads(
+        (ROOT / "docs/evidence/phase-5/voice-model-sources.json").read_text()
+    )
+    for relative, source in extra.items():
+        target = ROOT / ".runtime/media/models" / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if (
+            target.exists()
+            and hashlib.sha256(target.read_bytes()).hexdigest() == source["sha256"]
+        ):
+            continue
+        temporary = target.with_suffix(".download")
+        urllib.request.urlretrieve(source["url"], temporary)
+        if hashlib.sha256(temporary.read_bytes()).hexdigest() != source["sha256"]:
+            temporary.unlink(missing_ok=True)
+            raise RuntimeError("Supporting voice model checksum mismatch")
+        temporary.replace(target)
+    print("Kokoro and local speaker matching installed. No reasoning model downloaded.")
 
 
 if __name__ == "__main__":

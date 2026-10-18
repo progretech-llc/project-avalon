@@ -211,6 +211,18 @@ def create_app(controller=None, test_config=None):
                 control.media.wake()
             elif operation == "sleep":
                 control.media.stop()
+            elif operation == "preview_voice":
+                if control.active:
+                    raise ValueError(
+                        "Wait for the current turn before previewing a voice"
+                    )
+                control.media.speak("Hello. I am Avalon. This is my selected voice.")
+            elif operation == "reset_owner":
+                control.media.stop()
+                control.media.state["notice"] = (
+                    "Voice owner forgotten. Wake up and address Avalon to set a new owner."
+                )
+                control.publish()
             elif operation == "record":
                 control.media.record()
             elif operation == "send_recording":

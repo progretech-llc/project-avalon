@@ -1155,3 +1155,6 @@ body[data-status="switching"] .connection-label {
   grid-column: 1 / -1;
   margin: 0;
 }
+
+.device-form input[type="range"] { width: 100%; accent-color: var(--cyan); }
+.device-form output { float: right; font-size: .85rem; color: var(--cyan); }

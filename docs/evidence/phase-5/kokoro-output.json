@@ -1,0 +1,11 @@
+{
+  "method": "Authenticated voice preview \u2192 actual Kokoro \u2192 pitch/PCM pipeline \u2192 pw-play \u2192 selected physical HDMI sink monitor, ephemeral PCM reduced to RMS, never saved",
+  "sink": "alsa_output.pci-0000_bf_00.1.hdmi-stereo",
+  "samples": 126437,
+  "output_rms": 0.05096,
+  "speech_start_ms": 730,
+  "speech_error": "",
+  "listener_preserved": "hey avalon",
+  "avatar_preserved": "ethereal",
+  "human_audibility": "Owner confirmed Smooth now after removing redundant PCM sleeps and increasing PipeWire buffer to 150ms"
+}

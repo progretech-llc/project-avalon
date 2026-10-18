@@ -1,4 +1,4 @@
-import { mountCore } from "./core.js?v=4.2";
+import { mountCore } from "./core.js?v=5.2";
 const $ = (id) => document.getElementById(id);
 let csrf = "",
   authorized = false,
@@ -15,6 +15,7 @@ let state = {
   sessions: [],
   events: [],
 };
+let devicesDirty = false;
 let setCore = () => {};
 try {
   setCore = mountCore($("presence-canvas"));
@@ -569,15 +570,26 @@ function renderMedia() {
         : d.camera
           ? d.face
             ? "Camera tracking a face"
-            : "Camera on · waiting for a face"
+            : d.focus === "motion" ? "Following camera movement" : "Camera on · waiting for movement"
           : "No devices active";
   $("audio-level").value = d.level;
-  if (!document.querySelector("#device-form:focus-within")) {
+  $("voice-owner-status").textContent = d.voice_owner ? "Session voice matched. Sleep or reset to change owner." : "No session voice yet. Say the listener phrase with a command.";
+  $("speech-status").textContent = d.speech_error || (d.audio_busy ? (d.speaking ? "Playing through selected output…" : "Generating local speech…") : d.speech_latency_ms != null ? `Last voice started in ${d.speech_latency_ms} ms after text was ready.` : "No voice playback yet.");
+  $("preview-voice").disabled = !authorized || busy || d.locked || !!state.active_turn || d.audio_busy;
+  $("reset-voice-owner").disabled = !authorized || busy || !d.awake;
+  if (!devicesDirty && !document.querySelector("#device-form:focus-within")) {
     $("audio-input").value = d.settings.input;
     $("audio-output").value = d.settings.output;
     $("camera-device").value = d.settings.camera;
     $("spoken-replies").checked = d.settings.spoken_replies;
     $("listener-phrase").value = d.settings.listener_phrase;
+    $("voice-engine").value = d.settings.voice_engine;
+    $("voice-style").value = d.settings.voice_style;
+    $("voice-pitch").value = d.settings.voice_pitch;
+    $("voice-speed").value = d.settings.voice_speed;
+    $("speaker-lock").checked = d.settings.speaker_lock;
+    $("followup-replies").checked = d.settings.followup_replies;
+    renderVoiceValues();
   }
 }
 async function refreshDevices() {
@@ -605,6 +617,7 @@ async function refreshDevices() {
   renderMedia();
 }
 $("refresh-devices").addEventListener("click", () => action(refreshDevices));
+$("device-form").addEventListener("input", () => { devicesDirty = true; });
 $("device-form").addEventListener("submit", (event) => {
   event.preventDefault();
   action(async () => {
@@ -615,8 +628,16 @@ $("device-form").addEventListener("submit", (event) => {
         camera: $("camera-device").value,
         spoken_replies: $("spoken-replies").checked,
         listener_phrase: $("listener-phrase").value,
+        voice_engine: $("voice-engine").value,
+        voice_style: $("voice-style").value,
+        voice_pitch: Number($("voice-pitch").value),
+        voice_speed: Number($("voice-speed").value),
+        speaker_lock: $("speaker-lock").checked,
+        followup_replies: $("followup-replies").checked,
       }),
     );
+    devicesDirty = false;
+    renderMedia();
     notice("Devices saved. Capture is off until you enable it.", "success");
   });
 });
@@ -626,6 +647,8 @@ for (const [id, operation] of [
   ["mute", "mute"],
   ["read-reply", "read_reply"],
   ["camera-on", "camera_on"],
+  ["preview-voice", "preview_voice"],
+  ["reset-voice-owner", "reset_owner"],
   ["camera-off", "camera_off"],
 ])
   $(id).addEventListener("click", () =>
@@ -738,3 +761,9 @@ $("presence-canvas").addEventListener("avatar-ready", () => {
   $("avatar-fallback").hidden = true;
   if ($("notice").textContent.startsWith("GPU preview unavailable")) notice("");
 });
+
+function renderVoiceValues() {
+  $("pitch-value").textContent = `${Number($("voice-pitch").value) > 0 ? "+" : ""}${$("voice-pitch").value} semitones`;
+  $("speed-value").textContent = `${Number($("voice-speed").value).toFixed(2)}×`;
+}
+for (const id of ["voice-pitch", "voice-speed"]) $(id).addEventListener("input", renderVoiceValues);

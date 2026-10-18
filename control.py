@@ -432,6 +432,7 @@ class Controller:
                 "heartbeat": time.time(),
                 "appearance": self.appearance,
             },
+            durable=False,
         )
 
     def visual_sensors(self):
@@ -695,6 +696,16 @@ class Controller:
                             "payload": {
                                 "content": text.strip()
                                 + (
+                                    "\n\nVoice conversation: answer concisely in one or two sentences unless detail is requested. Current Ubuntu local time: "
+                                    + time.strftime("%Y-%m-%d %H:%M:%S %Z")
+                                    if spoken
+                                    or (
+                                        self.media
+                                        and getattr(self.media, "awake", False)
+                                    )
+                                    else ""
+                                )
+                                + (
                                     "\n\nAvalon desktop action protocol: if the user asks you to open this conversation workspace folder, propose it by writing exactly [[avalon:open_workspace]] on a line by itself. This only requests user approval; do not use shell tools to open anything. No other desktop actions are supported."
                                     if self.desktop_actions
                                     else ""
@@ -804,7 +815,10 @@ class Controller:
                             )
                         self.set_status("completed", "Response completed")
                         if (
-                            job.get("spoken")
+                            (
+                                job.get("spoken")
+                                or (self.media and getattr(self.media, "awake", False))
+                            )
                             and self.media
                             and self.media.settings["spoken_replies"]
                             and not self.pending_action

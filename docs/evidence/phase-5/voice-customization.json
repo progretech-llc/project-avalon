@@ -1,0 +1,37 @@
+{
+  "method": "Actual CPU Kokoro ONNX and FFmpeg; synthetic voices, no recording/playback. Actual local speaker embeddings held in memory only.",
+  "model_load_seconds": 0.508,
+  "presets": [
+    {
+      "style": "female",
+      "pitch": 0,
+      "first_pcm_seconds": 0.134,
+      "audio_seconds": 3.788
+    },
+    {
+      "style": "female",
+      "pitch": 4,
+      "first_pcm_seconds": 0.157,
+      "audio_seconds": 3.788
+    },
+    {
+      "style": "male",
+      "pitch": 0,
+      "first_pcm_seconds": 0.128,
+      "audio_seconds": 4.359
+    },
+    {
+      "style": "robotic",
+      "pitch": 0,
+      "first_pcm_seconds": 0.143,
+      "audio_seconds": 3.635
+    }
+  ],
+  "speaker_same_voice_cosine": 0.803,
+  "speaker_other_voice_cosine": 0.286,
+  "speaker_threshold": 0.65,
+  "ambient_enrollment_rejected": true,
+  "different_speaker_rejected": true,
+  "pitch_octave_test_hz": 440.0,
+  "pitch_preserves_duration": true
+}
