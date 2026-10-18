@@ -2,7 +2,9 @@
 
 An embodied digital robot for Ubuntu: a living wallpaper and Presence Control Center, powered by LampOS and one selected AI runtime/model.
 
-**Status:** specification and feasibility research. No Avalon application, installer or live LampOS integration has been delivered yet.
+**Status:** phase 1 foundation implemented and qualified: real LampOS/OpenCode/Ollama turn, GPU desktop proof, bidirectional Constellation handover, recovery tests and native diagnostic launcher. Full control center, avatars, voice and vision remain phases 2–4.
+
+[Phase 1 setup and evidence](docs/PHASE-1.md). The installed **Project Avalon** app-menu/Desktop launcher opens the foundation controls. Log out/in once to load newly installed GNOME extension code.
 
 - [Product specification](docs/SPECIFICATION.md) — authoritative requirements, architecture and acceptance criteria.
 - [Five-phase delivery plan](docs/DELIVERY.md) — dependencies, exit gates and honest progress.

@@ -1,0 +1,7 @@
+{
+  "passed": true,
+  "method": "strace file operations for Avalon runtime and all descendants during a real turn",
+  "global_agent_config_write_operations": 0,
+  "observed_file_write_operations": 76,
+  "note": "Other active CLI sessions changed global config during fingerprint checks; syscall attribution verifies only Avalon descendants."
+}

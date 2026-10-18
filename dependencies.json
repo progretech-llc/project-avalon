@@ -1,0 +1,13 @@
+{
+  "lampos": {
+    "repository": "https://github.com/autonomous-ai/lampOS.git",
+    "revision": "f3f708859d175a8a271e1a7b5e17dca9dee50361",
+    "license": "Apache-2.0 for the Go runtime; HAL is GPL-3.0 and is not bundled here"
+  },
+  "go": {
+    "version": "1.27.2",
+    "linux_amd64_sha256": "ecbadb99091a3f46e31f5f934b068b1864eafa7995211b39eaddf76996045fe5"
+  },
+  "qualified_opencode": "1.19.3",
+  "qualified_shell": "50.1"
+}

@@ -1,6 +1,6 @@
 # Feasibility findings — 2026-10-18
 
-These are source/installation observations, not a live Avalon test.
+These initial source/installation observations are preserved from project definition. [Phase 1 qualification](PHASE-1.md) records later live gateway and desktop tests. Unresolved voice, device and permission work remains scoped to later phases.
 
 ## Local inspection
 

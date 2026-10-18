@@ -26,7 +26,7 @@ The supplied image sets the visual ambition: luminous particles, convincing huma
 
 Initial qualification target: Ubuntu GNOME 50 on Wayland, matching this workstation. Other GNOME versions and X11 require explicit qualification before support is claimed.
 
-Recommended stack (implementation selection pending the owner's stack response): a native GNOME desktop integration, an isolated GPU renderer, a local Python service and a web-based control center. A desktop launcher opens the control center without terminal use. Use existing installed libraries before adding dependencies. A PWA/browser alone cannot own the Wayland desktop layer.
+Architecture delegated by the owner on 2026-10-18: native GNOME desktop integration, bounded GPU shader effects, an isolated LampOS runtime process and a web-based control center. The phase 1 Go host links LampOS's unmodified exported gateway; Python provides setup and native foundation diagnostics. Asset generation and agent work stay outside the compositor. A desktop launcher opens the control center without terminal use. Use existing installed libraries before adding dependencies. A PWA/browser alone cannot own the Wayland desktop layer.
 
 | Component | Responsibility |
 | --- | --- |
@@ -36,7 +36,7 @@ Recommended stack (implementation selection pending the owner's stack response):
 | LampOS | Existing gateway/runtime, conversation, voice/vision pipeline, Harness routing |
 | Control center | Session, platform/model, chat, avatars, devices, activity, permissions and diagnostics |
 
-Keep expensive rendering and network work out of GNOME Shell's main thread. Phase 1 must prove the desktop-host technique before the rendering stack is locked. Reusing Constellation's Cairo animation path is not sufficient evidence that it can deliver the image's avatar quality.
+Keep expensive rendering and network work out of GNOME Shell's main thread. Phase 1 proved the native GPU shader actor technique; phase 3 still must meet the image's avatar quality and performance targets. Reusing Constellation's Cairo animation path is not sufficient evidence that it can deliver the image's avatar quality.
 
 Use a pinned LampOS revision in an isolated project environment. Prefer configuration and documented interfaces. Maintain any necessary portability patch in a canonical ProgreTech fork, with tests and an upstream revision reference. Never install the ARM appliance scripts blindly onto Ubuntu or overwrite existing agent configuration.
 
@@ -67,7 +67,7 @@ Codex/Claude/Hermes selections show their own supported model/provider choices; 
 
 Known Constellation UUID: `factory-observatory@progretech.com`. Avalon will have its own stable extension identity.
 
-Exclusivity requires changes on **both** sides, covering extension enable, GUI launch, service restart, autostart and manual `gnome-extensions enable`. A check only in Avalon's button is insufficient. Use one shared per-user owner record/lock and a deterministic handover protocol; the precise Shell-compatible mechanism is a phase 1 deliverable. Disable previous rendering, verify it stopped, transfer ownership, then start the new renderer. Simultaneous starts must serialize; losing startup stays stopped and reports the owner. Stale records require verified recovery. Do not rely on PID alone or kill broad process-name matches.
+Exclusivity requires changes on **both** sides, covering extension enable, GUI launch, service restart, autostart and manual `gnome-extensions enable`. A check only in Avalon's button is insufficient. Use one shared per-Shell synchronous ownership registry and stop-before-start handover. A private per-user runtime record reports ownership but never authorizes it; a restarted Shell creates a fresh registry. This phase 1 mechanism covers both extensions and direct enable paths. Disable previous rendering, verify it stopped, transfer ownership, then start the new renderer. Simultaneous starts must serialize; losing startup stays stopped and reports the owner. Stale records require verified recovery. Do not rely on PID alone or kill broad process-name matches.
 
 Disabling or uninstalling Avalon releases its resources and restores the ordinary wallpaper. Restoring Constellation is an explicit handover, without creating an automatic enable loop. Exclusivity applies to the running wallpaper application, not permission to kill unrelated agents or alter their work.
 
