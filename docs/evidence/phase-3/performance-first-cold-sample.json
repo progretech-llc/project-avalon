@@ -1,0 +1,32 @@
+{
+  "compositor_pid": 2620984,
+  "resolution": [
+    [
+      1920,
+      1080
+    ]
+  ],
+  "monitor_count": 1,
+  "quality": "balanced",
+  "avatar": "ethereal",
+  "frame_limit": 30,
+  "compositor": "GNOME Shell 50.1, isolated native headless GPU compositor",
+  "frame_metric": "Clutter Stage after-paint; not physical scanout",
+  "cpu_metric": "process user+system ticks; 100% is one CPU core; active minus disabled baseline",
+  "baseline": {
+    "seconds": 30.000075393996667,
+    "cpu_percent_one_core": 0.13333299824974593,
+    "stage_paints_per_second": 0.0,
+    "rss_bytes": 420700160,
+    "pss_bytes": 225617920
+  },
+  "active": {
+    "seconds": 30.000085649982793,
+    "cpu_percent_one_core": 3.8333223892001103,
+    "stage_paints_per_second": 30.166580541096526,
+    "rss_bytes": 423317504,
+    "pss_bytes": 224616448
+  },
+  "incremental_cpu_percent_one_core": 3.6999893909503645,
+  "logical_cpus": 32
+}

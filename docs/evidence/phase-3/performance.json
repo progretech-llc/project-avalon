@@ -1,0 +1,55 @@
+{
+  "compositor_pid": 2653649,
+  "resolution": [
+    [
+      1920,
+      1080
+    ]
+  ],
+  "monitor_count": 1,
+  "quality": "balanced",
+  "avatar": "ethereal",
+  "frame_limit": 30,
+  "compositor": "GNOME Shell 50.1, isolated native headless GPU compositor",
+  "frame_metric": "Clutter Stage after-paint; not physical scanout",
+  "cpu_metric": "process user+system ticks; 100% is one CPU core; active minus disabled baseline",
+  "baseline": {
+    "seconds": 30.00009287701687,
+    "cpu_percent_one_core": 0.3999987616436089,
+    "stage_paints_per_second": 0.03333323013696741,
+    "rss_bytes": 431165440,
+    "pss_bytes": 233589760
+  },
+  "active": {
+    "seconds": 90.00021559698507,
+    "cpu_percent_one_core": 3.8111019815322553,
+    "stage_paints_per_second": 30.08881681046457,
+    "rss_bytes": 431882240,
+    "pss_bytes": 230619136
+  },
+  "active_intervals": [
+    {
+      "seconds": 30.000076473981608,
+      "cpu_percent_one_core": 3.9333233067701934,
+      "stage_paints_per_second": 30.09992327130071,
+      "rss_bytes": 431841280,
+      "pss_bytes": 230580224
+    },
+    {
+      "seconds": 30.000073166011134,
+      "cpu_percent_one_core": 3.6999909762139676,
+      "stage_paints_per_second": 30.0999265902812,
+      "rss_bytes": 431915008,
+      "pss_bytes": 230652928
+    },
+    {
+      "seconds": 30.00006595699233,
+      "cpu_percent_one_core": 3.7999916454660068,
+      "stage_paints_per_second": 30.066600563248574,
+      "rss_bytes": 431882240,
+      "pss_bytes": 230619136
+    }
+  ],
+  "incremental_cpu_percent_one_core": 3.4111032198886466,
+  "logical_cpus": 32
+}

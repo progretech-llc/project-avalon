@@ -28,6 +28,10 @@ class FakeController:
             "active_turn": None,
         }
 
+    def set_appearance(self, data):
+        self.mutations += 1
+        return {"appearance": data}
+
     def chat(self, text):
         self.mutations += 1
         return "turn"
@@ -100,6 +104,24 @@ class WebTest(unittest.TestCase):
             headers={"Origin": ORIGIN, "X-CSRF-Token": token},
         )
         self.assertEqual(r.status_code, 202)
+        self.assertEqual(self.controller.mutations, 1)
+
+    def test_appearance_requires_authentication_and_csrf(self):
+        r = self.client.post(
+            "/api/appearance",
+            base_url=ORIGIN,
+            json={"avatar": "mascot"},
+            headers={"Origin": ORIGIN},
+        )
+        self.assertEqual(r.status_code, 401)
+        token = self.auth()
+        r = self.client.post(
+            "/api/appearance",
+            base_url=ORIGIN,
+            json={"avatar": "mascot"},
+            headers={"Origin": ORIGIN, "X-CSRF-Token": token},
+        )
+        self.assertEqual(r.status_code, 200)
         self.assertEqual(self.controller.mutations, 1)
 
     def test_private_responses_are_not_cached(self):

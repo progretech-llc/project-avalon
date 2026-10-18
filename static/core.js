@@ -1,8 +1,5 @@
-// The control center uses the same verified activity states as the wallpaper.
-const vertex = `attribute vec2 a_position;varying vec2 uv;void main(){uv=a_position*0.5+0.5;gl_Position=vec4(a_position,0.,1.);}`;
-const fragment = `precision highp float;varying vec2 uv;uniform float time;uniform float aspect;uniform float state;
-float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
-void main(){vec2 p=(uv-.5)*vec2(aspect,1.);p.y-=.06;float radius=length(p);float active=step(1.5,state)*step(state,4.5);float t=time*(1.+active*1.7);float breath=.22+.008*sin(t*.8);float ring=exp(-120.*abs(radius-breath));float halo=exp(-8.*radius);float angle=atan(p.y,p.x);float flow=.55+.45*sin(angle*4.-t*.7+radius*14.);vec3 color=vec3(.024,.039,.065);vec3 accent=vec3(.06,.58,.72);if(state>4.5&&state<5.5)accent=vec3(.1,.8,.42);if(state>5.5&&state<6.5)accent=vec3(.9,.2,.12);if(state>7.5)accent=vec3(.65,.35,.85);color+=accent*ring*(.7+flow)*(state<.5?.35:1.);color+=vec3(.16,.10,.34)*halo;color+=vec3(1.,.64,.19)*exp(-38.*radius)*(.8+.2*sin(t));vec2 grid=floor(uv*vec2(150.*aspect,150.));color+=step(.996,hash(grid))*vec3(.15,.29,.4)*(.5+.5*sin(t+hash(grid)*6.28));gl_FragColor=vec4(color,1.);}`;
+// The same original volume shader runs in GNOME/Cogl and the control center.
+const vertex = `attribute vec2 a_position;varying vec2 uv;void main(){uv=a_position*.5+.5;gl_Position=vec4(a_position,0.,1.);}`;
 const states = {
   disconnected: 0,
   idle: 1,
@@ -14,70 +11,159 @@ const states = {
   cancelled: 7,
   switching: 8,
 };
+const avatars = { ethereal: 0, sentinel: 1, mascot: 2, abstract: 3 };
+let sharedSource;
 export function mountCore(canvas) {
-  const gl = canvas.getContext("webgl", { alpha: false, antialias: false });
-  if (!gl) {
-    canvas.setAttribute(
-      "aria-label",
-      "Energy-core preview unavailable; use the connection status below",
-    );
-    return () => {};
-  }
-  function shader(type, source) {
-    const value = gl.createShader(type);
-    gl.shaderSource(value, source);
-    gl.compileShader(value);
-    if (!gl.getShaderParameter(value, gl.COMPILE_STATUS))
-      throw Error("Preview shader could not compile");
-    return value;
-  }
-  const program = gl.createProgram();
-  gl.attachShader(program, shader(gl.VERTEX_SHADER, vertex));
-  gl.attachShader(program, shader(gl.FRAGMENT_SHADER, fragment));
-  gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return () => {};
-  gl.useProgram(program);
-  const buffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
-    gl.STATIC_DRAW,
-  );
-  const position = gl.getAttribLocation(program, "a_position");
-  gl.enableVertexAttribArray(position);
-  gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-  const uTime = gl.getUniformLocation(program, "time"),
-    uAspect = gl.getUniformLocation(program, "aspect"),
-    uState = gl.getUniformLocation(program, "state");
-  let status = 0,
+  const gl = canvas.getContext("webgl", {
+    alpha: false,
+    antialias: false,
+    powerPreference: "low-power",
+  });
+  if (!gl) throw Error("GPU preview is unavailable");
+  let program,
+    frame,
+    dirty = true,
     last = 0,
-    frame;
+    status = 0,
+    appearance = {
+      avatar: "ethereal",
+      quality: "balanced",
+      fps: 30,
+      motion: "system",
+    },
+    frames = 0;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  const observer = new IntersectionObserver((entries) => {
+    visible = entries[0]?.isIntersecting;
+    dirty = true;
+  });
+  let visible = true;
+  observer.observe(canvas);
+  function compile(type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      const message = gl.getShaderInfoLog(shader);
+      gl.deleteShader(shader);
+      throw Error(message);
+    }
+    return shader;
+  }
+  function initialize(source) {
+    program = gl.createProgram();
+    const vs = compile(gl.VERTEX_SHADER, vertex),
+      fs = compile(
+        gl.FRAGMENT_SHADER,
+        `precision highp float;varying vec2 uv;uniform float u_time,u_aspect,u_state,u_avatar,u_quality;${source}\nvoid main(){gl_FragColor=vec4(avalon(uv,u_aspect,u_time,u_state,u_avatar,u_quality),1.);}`,
+      );
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS))
+      throw Error("Avatar program could not link");
+    gl.useProgram(program);
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+      gl.STATIC_DRAW,
+    );
+    const p = gl.getAttribLocation(program, "a_position");
+    gl.enableVertexAttribArray(p);
+    gl.vertexAttribPointer(p, 2, gl.FLOAT, false, 0, 0);
+    locations = Object.fromEntries(
+      ["time", "aspect", "state", "avatar", "quality"].map((k) => [
+        k,
+        gl.getUniformLocation(program, "u_" + k),
+      ]),
+    );
+    dirty = true;
+    delete canvas.dataset.error;
+    canvas.dispatchEvent(new CustomEvent("avatar-ready"));
+  }
+  let locations;
   function draw(now) {
     frame = requestAnimationFrame(draw);
-    if (document.hidden || now - last < (reduced.matches ? 1000 : 33)) return;
-    last = now;
-    const box = canvas.getBoundingClientRect(),
-      ratio = Math.min(devicePixelRatio || 1, 1.5);
+    if (!program || document.hidden || !visible) return;
+    const still =
+      appearance.motion === "reduced" ||
+      (appearance.motion === "system" && reduced.matches);
+    const box = canvas.getBoundingClientRect();
+    const scales = { economy: 0.65, balanced: 1, high: 1.5 };
+    const ratio = Math.min(devicePixelRatio || 1, scales[appearance.quality]);
     const w = Math.max(1, Math.round(box.width * ratio)),
       h = Math.max(1, Math.round(box.height * ratio));
-    if (canvas.width !== w || canvas.height !== h) {
+    if (w !== canvas.width || h !== canvas.height) {
       canvas.width = w;
       canvas.height = h;
       gl.viewport(0, 0, w, h);
+      dirty = true;
     }
-    gl.uniform1f(uTime, reduced.matches ? 0 : now / 1000);
-    gl.uniform1f(uAspect, w / h);
-    gl.uniform1f(uState, status);
+    if ((still && !dirty) || (!dirty && now - last < 1000 / appearance.fps - 1))
+      return;
+    gl.uniform1f(locations.time, still ? 0 : now / 1000);
+    gl.uniform1f(locations.aspect, w / h);
+    gl.uniform1f(locations.state, status);
+    gl.uniform1f(locations.avatar, avatars[appearance.avatar] ?? 0);
+    gl.uniform1f(
+      locations.quality,
+      ["economy", "balanced", "high"].indexOf(appearance.quality),
+    );
     gl.drawArrays(gl.TRIANGLES, 0, 6);
+    last = now;
+    dirty = false;
+    frames++;
+    canvas.dataset.frames = frames;
+    canvas.dataset.state = Object.keys(states)[status];
+    canvas.dataset.avatar = appearance.avatar;
   }
+  function failed(error) {
+    canvas.dataset.error = "unavailable";
+    canvas.setAttribute(
+      "aria-label",
+      "Avatar preview unavailable. Connection status remains below.",
+    );
+    canvas.dispatchEvent(
+      new CustomEvent("avatar-error", { detail: error.message }),
+    );
+  }
+  sharedSource ??= fetch("/static/presence.glsl?v=3").then((r) => {
+    if (!r.ok) throw Error("Avatar shader is unavailable");
+    return r.text();
+  });
+  sharedSource.then(initialize).catch(failed);
   frame = requestAnimationFrame(draw);
+  reduced.addEventListener("change", () => {
+    dirty = true;
+  });
   canvas.addEventListener("webglcontextlost", (event) => {
     event.preventDefault();
-    cancelAnimationFrame(frame);
+    program = null;
+    failed(Error("GPU preview lost. Restoring…"));
   });
-  return (value) => {
-    status = states[value] ?? 0;
+  canvas.addEventListener("webglcontextrestored", () =>
+    sharedSource.then(initialize).catch(failed),
+  );
+  return (value, settings) => {
+    const next = states[value] ?? 0;
+    if (next !== status) {
+      status = next;
+      dirty = true;
+    }
+    if (
+      settings &&
+      Object.entries(settings).some(([key, value]) => appearance[key] !== value)
+    ) {
+      appearance = { ...appearance, ...settings };
+      canvas.setAttribute(
+        "aria-label",
+        "Live " + appearance.avatar + " avatar preview",
+      );
+      dirty = true;
+    }
   };
 }

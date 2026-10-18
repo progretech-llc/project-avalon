@@ -7,8 +7,8 @@
     <title>Project Avalon</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/static/icons/avalon-192.png" />
-    <link rel="stylesheet" href="/static/app.css" />
-    <script src="/static/app.js" type="module"></script>
+    <link rel="stylesheet" href="/static/app.css?v=3" />
+    <script src="/static/app.js?v=3" type="module"></script>
   </head>
   <body data-status="disconnected">
     <svg class="icon-defs" aria-hidden="true">
@@ -56,6 +56,9 @@
           >
             <svg class="icon"><use href="#i-presence" /></svg>Presence
           </button>
+          <button class="nav-item" data-page="appearance">
+            <svg class="icon"><use href="#i-presence" /></svg>Appearance
+          </button>
           <button class="nav-item" data-page="sessions">
             <svg class="icon"><use href="#i-sessions" /></svg>Sessions
           </button>
@@ -90,9 +93,16 @@
         <section data-view="presence" class="presence-view">
           <div class="presence-column">
             <div class="body-preview">
+              <img
+                id="avatar-fallback"
+                class="avatar-fallback"
+                src="/static/avatars/ethereal.png"
+                alt="Ethereal Human still avatar"
+                hidden
+              />
               <canvas
                 id="presence-canvas"
-                aria-label="Live energy-core preview"
+                aria-label="Live animated avatar preview"
               ></canvas>
               <div class="preview-caption">
                 <span id="connection-label" class="connection-label"
@@ -270,6 +280,95 @@
             <h2>Recent activity</h2>
             <ol id="activity-list"></ol>
           </section>
+        </section>
+        <section data-view="appearance" class="appearance-page" hidden>
+          <div class="section-heading">
+            <h2>Choose a presence.</h2>
+            <p>One mind. A different way to meet it.</p>
+          </div>
+          <div class="avatar-options" role="group" aria-label="Avatar">
+            <button
+              class="avatar-option"
+              data-avatar="ethereal"
+              aria-pressed="true"
+            >
+              <img src="/static/avatars/ethereal.png" alt="" /><span
+                >Ethereal Human<small
+                  >Cyan particles · golden heart</small
+                ></span
+              >
+            </button>
+            <button
+              class="avatar-option"
+              data-avatar="sentinel"
+              aria-pressed="false"
+            >
+              <img src="/static/avatars/sentinel.png" alt="" /><span
+                >Neon Sentinel<small>Violet light · quiet focus</small></span
+              >
+            </button>
+            <button
+              class="avatar-option"
+              data-avatar="mascot"
+              aria-pressed="false"
+            >
+              <img src="/static/avatars/mascot.png" alt="" /><span
+                >Progre Mascot<small>A friendly face · warm energy</small></span
+              >
+            </button>
+            <button
+              class="avatar-option"
+              data-avatar="abstract"
+              aria-pressed="false"
+            >
+              <img src="/static/avatars/abstract.png" alt="" /><span
+                >Abstract Core<small>Orbital light · pure motion</small></span
+              >
+            </button>
+          </div>
+          <form id="appearance-form" class="render-settings">
+            <div>
+              <label for="render-quality">Detail</label
+              ><select id="render-quality">
+                <option value="economy">Economy</option>
+                <option value="balanced">Balanced</option>
+                <option value="high">High</option>
+              </select>
+              <p>Economy uses fewer GPU samples. High adds finer detail.</p>
+            </div>
+            <div>
+              <label for="render-fps">Frame limit</label
+              ><select id="render-fps">
+                <option value="15">15 FPS · low power</option>
+                <option value="30">30 FPS · default</option>
+                <option value="60">60 FPS</option>
+              </select>
+              <p>
+                A frame limit is a target; available hardware determines the
+                result.
+              </p>
+            </div>
+            <div>
+              <label for="render-motion">Motion</label
+              ><select id="render-motion">
+                <option value="system">Follow Ubuntu / browser</option>
+                <option value="full">Animated</option>
+                <option value="reduced">Still · react to state changes</option>
+              </select>
+              <p>
+                Still mode keeps the avatar and state colors without continuous
+                motion.
+              </p>
+            </div>
+            <button class="primary" type="submit" id="save-appearance">
+              Apply appearance
+            </button>
+          </form>
+          <p class="appearance-note">
+            Appearance never starts another model. Animation pauses when the
+            preview is hidden and while Ubuntu is locked. Newly installed
+            desktop renderer code loads after logout/login.
+          </p>
         </section>
         <footer class="page-footer">
           <span id="footer-target">OpenCode + Ollama</span

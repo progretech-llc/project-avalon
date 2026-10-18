@@ -1,0 +1,27 @@
+{
+  "avatars_selectable": 4,
+  "runtime_restarts_on_appearance": 0,
+  "session_history_unchanged": true,
+  "reduced_and_system_motion_stop_frames": true,
+  "hidden_preview_stops_frames": true,
+  "context_loss_and_restore": true,
+  "no_webgl_static_avatar": true,
+  "mobile_overflow": false,
+  "offline_fallback": true,
+  "private_api_cached": false,
+  "page_errors": [],
+  "viewports": [
+    [
+      1920,
+      1080
+    ],
+    [
+      1440,
+      1000
+    ],
+    [
+      390,
+      844
+    ]
+  ]
+}

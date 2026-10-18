@@ -1,6 +1,6 @@
 ---
 name: Project Avalon
-description: Observed phase 2 Presence Control Center visual system
+description: Observed Presence Control Center and phase 3 avatar visual system
 colors:
   bg: "#090e16"
   surface: "#101721"
@@ -56,6 +56,16 @@ components:
     textColor: "{colors.text}"
     rounded: "{rounded.control}"
     padding: "10px 16px"
+  avatar-card:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.radius}"
+    padding: "0"
+  avatar-card-selected:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.text}"
+    rounded: "{rounded.radius}"
+    padding: "0"
   conversation:
     backgroundColor: "{colors.surface}"
     textColor: "{colors.text}"
@@ -65,15 +75,15 @@ components:
 
 ## Overview
 
-Avalon uses quiet dark surfaces, precise borders and a cyan and gold living energy core. The implemented phase 2 interface supports one selected model and session with readable conversation, explicit access controls and visible runtime state. This document captures the existing system.
+Avalon uses quiet dark surfaces, precise borders and a luminous GPU avatar. The implemented interface supports one selected model and session with readable conversation, explicit access controls and visible runtime state. This document captures the existing system.
 
-The owner’s supplied wide_cinematic_poster_mockup_layout_of_a_desktop.png remains the ultimate luminous avatar reference. The phase 2 abstract core is a technical visualization; full humanoid, sentinel and mascot embodiment remains phase 3. Surface composition stays in .impeccable/surfaces/control-center.md.
+The owner’s supplied wide_cinematic_poster_mockup_layout_of_a_desktop.png remains the ultimate luminous avatar reference. Phase 3 delivers four original shader bodies: cyan/gold Ethereal Human, violet Neon Sentinel with a tapered open cowl, recessed dark mask and angular armor, teal/gold Progre Mascot and purple orbital Abstract Core. Surface composition stays in .impeccable/surfaces/control-center.md and appearance.md.
 
 **Key Characteristics:**
 
 - Dark tonal surfaces and thin structural borders.
 - Native Ubuntu typography and original vector stroke icons.
-- Runtime-linked core motion with text equivalents.
+- Runtime-linked avatar motion with text equivalents and a selected-avatar still fallback.
 
 ## Colors
 
@@ -103,11 +113,11 @@ At 1150px the rail becomes 160px and spacing tightens. At 900px it becomes a 76p
 
 ## Elevation & Depth
 
-Ordinary surfaces use tonal layering and thin borders without box shadows. Glow belongs to the shader core and halo. Buttons transition background and border color over 150ms. Reduced motion disables CSS transitions; the shader freezes time and reduces drawing cadence. Hidden documents skip core redraws.
+Ordinary surfaces use tonal layering and thin borders without box shadows. Glow belongs to the shader core and halo. Buttons transition background and border color over 150ms. Reduced motion disables CSS transitions. Hidden documents and offscreen previews skip redraws. The selected 15/30/60 FPS limit caps animated drawing; economy, balanced and high detail control sampling and render scale. Still mode (explicit or following system reduced motion) freezes shader time and redraws only on state, settings or size changes.
 
 ## Shapes
 
-Controls use gently curved control corners; preview and conversation use larger panel corners. Structural borders are 1px. The core supplies circular geometry while application containers remain rectangular. Original icons use unfilled 20px vectors, 1.5px rounded strokes and joins. The brand mark is a separate original inline vector.
+Controls use gently curved control corners; preview and conversation use larger panel corners. Structural borders are 1px. Avatar bodies supply humanoid, armored, rounded mascot and orbital geometry while application containers remain rectangular. Original icons use unfilled 20px vectors, 1.5px rounded strokes and joins. The brand mark is a separate original inline vector.
 
 ## Components
 
@@ -127,9 +137,15 @@ Original icons accompany sentence-case labels. Selection has a tinted background
 
 Conversation uses the surface token, panel corners, a border and clipped contents. Header, turn status and composer keep visible boundaries. Sessions and activity use flat ruled rows. The current-session tag is plain cyan text, without a pill background.
 
-### Core preview
+### Avatar preview
 
-The ring, warm center and sparse star field are original shader code in static/core.js. Connection, heading and detail remain textual when WebGL fails. Working, writing and executing increase shader activity; completion, failure and switching change accent light. Phase 2 does not establish final avatar geometry.
+The four bodies, flowing energy filaments and sparse star field are original shared shader code in static/presence.glsl, mounted in WebGL by static/core.js and used by the native wallpaper. Working, writing and executing increase shader activity; completion, failure and switching change accent light. The caption overlays a dark gradient for readable connection, heading and detail. When WebGL is unavailable or lost, the selected avatar still remains visible with textual runtime state; the still itself does not encode live state.
+
+### Appearance selection and controls
+
+Avatar buttons show original renderer captures at a 3:4 aspect ratio above a name and muted description. Surface background, 12px corners and a 1px border match existing panels. Selection uses aria-pressed, a cyan border and a 2px cyan outline offset by 3px. Caption padding is 16px, reducing to 12px on phones. The 1100px-wide appearance surface uses four cards with 18px gaps, two columns at 1050px and 14px gaps at 600px.
+
+Labeled native selects expose Detail (Economy/Balanced/High), Frame limit (15/30/60 FPS) and Motion (Follow Ubuntu / browser, Animated, Still). The settings grid uses three columns with 24px gaps, two at 1050px and one at 600px. Apply appearance reuses the primary button. Appearance changes preserve the active mind and conversation; newly installed native renderer code requires logout/login.
 
 ## Do's and Don'ts
 
@@ -138,9 +154,9 @@ The ring, warm center and sparse star field are original shader code in static/c
 - Do preserve truthful selected-model, capability and permission labels.
 - Do reuse the native Ubuntu font stack and original local vectors.
 
-- Don’t present the phase 2 core as a finished avatar.
+- Don’t treat a static avatar capture as proof of live runtime activity.
 - Don’t invent telemetry, activity or available device capabilities.
 - Don’t add decorative glow to ordinary controls and containers.
 - Don’t replace the owner-pinned visual authority with a new identity.
 
-Evidence: extracted from static/app.css, templates/index.html, static/app.js and static/core.js; visually checked against .impeccable/review/desktop.png, mobile.png and permissions.png. PRODUCT.md and the confirmed control-center direction contract establish scope and owner authority. Captures show the implemented layout and visible tool-error detail; they do not prove every runtime action succeeds.
+Evidence: extracted from static/app.css, templates/index.html, static/app.js, static/core.js and static/presence.glsl; visually checked against .impeccable/review/desktop.png, appearance-desktop.png, mobile.png and appearance-mobile.png, plus docs/evidence/phase-3/wallpaper-sentinel.png. PRODUCT.md and the confirmed control-center and appearance direction contracts establish scope and owner authority. Captures establish delivered geometry, selected-card treatment and responsive composition; still fallback and motion behavior are grounded in source, not inferred from still captures. Inherited extraction drift and detector color/font advisories remain outside this ordinary extension; existing palette and typography tokens are preserved.

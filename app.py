@@ -158,6 +158,11 @@ def create_app(controller=None, test_config=None):
     def connect():
         return jsonify(control.resume())
 
+    @app.post("/api/appearance")
+    @private
+    def appearance():
+        return jsonify(control.set_appearance(request.get_json()))
+
     @app.post("/api/chat")
     @private
     def chat():

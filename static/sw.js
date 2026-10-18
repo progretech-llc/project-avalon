@@ -1,8 +1,12 @@
-const CACHE = "avalon-public-v1";
+const CACHE = "avalon-public-v3";
 const PUBLIC = [
-  "/static/app.css",
-  "/static/app.js",
-  "/static/core.js",
+  "/static/app.css?v=3",
+  "/static/app.js?v=3",
+  "/static/core.js?v=3",
+  "/static/presence.glsl?v=3",
+  ...["ethereal", "sentinel", "mascot", "abstract"].map(
+    (name) => `/static/avatars/${name}.png`,
+  ),
   "/static/offline.html",
   "/static/icons/avalon-192.png",
   "/static/icons/avalon-512.png",
@@ -33,7 +37,7 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
-  if (PUBLIC.includes(url.pathname))
+  if (PUBLIC.includes(url.pathname + url.search))
     event.respondWith(
       caches.match(event.request).then((hit) => hit || fetch(event.request)),
     );

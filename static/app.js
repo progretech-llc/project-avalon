@@ -1,4 +1,4 @@
-import { mountCore } from "./core.js";
+import { mountCore } from "./core.js?v=3";
 const $ = (id) => document.getElementById(id);
 let csrf = "",
   authorized = false,
@@ -19,7 +19,7 @@ let setCore = () => {};
 try {
   setCore = mountCore($("presence-canvas"));
 } catch {
-  /* Status text remains available without GPU preview. */
+  showAvatarFallback();
 }
 const labels = {
   disconnected: "Disconnected",
@@ -43,6 +43,13 @@ const headings = {
   cancelled: "A moment of quiet.",
   switching: "Changing the connection.",
 };
+function showAvatarFallback() {
+  $("presence-canvas").hidden = true;
+  $("avatar-fallback").hidden = false;
+  notice(
+    "GPU preview unavailable. Showing a still avatar; chat and connection controls still work.",
+  );
+}
 function notice(text, kind = "error") {
   const element = $("notice");
   element.hidden = !text;
@@ -79,10 +86,14 @@ function page(name) {
   $("page-title").textContent = {
     presence: "Presence",
     sessions: "Sessions",
+    appearance: "Appearance",
     permissions: "Permissions",
   }[name];
 }
 function controls() {
+  for (const button of document.querySelectorAll("[data-avatar]"))
+    button.disabled = !authorized || busy;
+  $("save-appearance").disabled = !authorized || busy;
   const target = platforms.find((p) => p.id === $("platform").value);
   $("connect").disabled =
     !authorized || busy || !target?.available || !$("model").value;
@@ -242,8 +253,23 @@ function renderEvents() {
 function apply(data, force = false) {
   state = { ...state, ...data };
   if (data.csrf) csrf = data.csrf;
+  if (data.appearance) {
+    const a = data.appearance;
+    $("avatar-fallback").src = "/static/avatars/" + a.avatar + ".png";
+    $("avatar-fallback").alt = a.avatar + " still avatar";
+    for (const button of document.querySelectorAll("[data-avatar]"))
+      button.setAttribute(
+        "aria-pressed",
+        String(button.dataset.avatar === a.avatar),
+      );
+    if (!document.querySelector("#appearance-form:focus-within")) {
+      $("render-quality").value = a.quality;
+      $("render-fps").value = String(a.fps);
+      $("render-motion").value = a.motion;
+    }
+  }
   document.body.dataset.status = state.status;
-  setCore(state.status);
+  setCore(state.status, state.appearance);
   $("connection-label").textContent = labels[state.status] || "Unknown";
   $("body-state").textContent =
     headings[state.status] || "Check the connection.";
@@ -478,3 +504,33 @@ async function initialize() {
   }
 }
 initialize();
+
+for (const button of document.querySelectorAll("[data-avatar]"))
+  button.addEventListener("click", () =>
+    action(async () => {
+      apply(await api("/api/appearance", { avatar: button.dataset.avatar }));
+      notice(
+        "Avatar selected. Your model and session are unchanged.",
+        "success",
+      );
+    }),
+  );
+$("appearance-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  action(async () => {
+    apply(
+      await api("/api/appearance", {
+        quality: $("render-quality").value,
+        fps: Number($("render-fps").value),
+        motion: $("render-motion").value,
+      }),
+    );
+    notice("Appearance applied.", "success");
+  });
+});
+$("presence-canvas").addEventListener("avatar-error", showAvatarFallback);
+$("presence-canvas").addEventListener("avatar-ready", () => {
+  $("presence-canvas").hidden = false;
+  $("avatar-fallback").hidden = true;
+  if ($("notice").textContent.startsWith("GPU preview unavailable")) notice("");
+});

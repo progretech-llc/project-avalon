@@ -30,7 +30,7 @@ Name: Project Avalon. The owner's supplied concept PNG sets the visual target. I
 
 ## Evidence on hand
 
-See docs/SPECIFICATION.md, docs/DELIVERY.md and docs/PHASE-1.md. The foundation shader is a technical desktop proof; the avatar visual phase remains outstanding.
+See docs/SPECIFICATION.md, docs/DELIVERY.md and docs/PHASE-1.md. Phase 3 delivers four original live GPU avatar forms and appearance controls. See docs/PHASE-3.md for visual review and measured resource evidence; native login-session updates still require logout/login.
 
 ## Product principles
 

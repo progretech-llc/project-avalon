@@ -226,6 +226,43 @@ class ControlTest(unittest.TestCase):
         finally:
             other.close()
 
+    def test_appearance_changes_do_not_restart_or_cancel_a_turn(self):
+        self.connect()
+        self.control.chat("continue")
+        identifier = self.control.active["id"]
+        starts, stops = self.runtime.starts, self.runtime.stops
+        for avatar in ("ethereal", "sentinel", "mascot", "abstract"):
+            state = self.control.set_appearance({"avatar": avatar, "motion": "reduced"})
+            self.assertEqual(state["active_turn"], identifier)
+            self.assertEqual((self.runtime.starts, self.runtime.stops), (starts, stops))
+            self.assertEqual(
+                json.loads(self.control.visual.read_text())["appearance"]["avatar"],
+                avatar,
+            )
+        self.assertEqual(self.control.store.get("appearance")["avatar"], "abstract")
+
+    def test_desktop_and_preview_use_identical_shader_source(self):
+        root = Path(__file__).resolve().parents[1]
+        self.assertEqual(
+            (root / "static/presence.glsl").read_bytes(),
+            (root / "gnome-extension/presence.glsl").read_bytes(),
+        )
+
+    def test_invalid_appearance_does_not_change_saved_settings(self):
+        original = self.control.appearance.copy()
+        for data in (
+            {"avatar": "../bad"},
+            {"fps": True},
+            {"fps": 120},
+            {"quality": "unbounded"},
+            {"motion": "rapid"},
+            {"executable": "run"},
+            [],
+        ):
+            with self.assertRaises(ValueError):
+                self.control.set_appearance(data)
+        self.assertEqual(self.control.appearance, original)
+
     def test_capability_discovery_excludes_embedding_models(self):
         def local(path, body=None):
             if path == "tags":

@@ -384,6 +384,15 @@ class Controller:
         self.status = "disconnected"
         self.detail = "Connect a local model to begin."
         self.selected = self.store.get("active_session")
+        self.appearance = self.store.get(
+            "appearance",
+            {
+                "avatar": "ethereal",
+                "quality": "balanced",
+                "fps": 30,
+                "motion": "system",
+            },
+        )
         self.closing = threading.Event()
         self.store.event(
             "startup", "Control center started; no previous task was replayed"
@@ -411,6 +420,7 @@ class Controller:
                 "session": self.selected,
                 "generation": self.generation,
                 "heartbeat": time.time(),
+                "appearance": self.appearance,
             },
         )
 
@@ -425,6 +435,7 @@ class Controller:
         with self.lock:
             response = {
                 "revision": self.revision,
+                "appearance": dict(self.appearance),
                 "status": self.status,
                 "detail": self.detail,
                 "active_turn": self.active["id"] if self.active else None,
@@ -442,6 +453,38 @@ class Controller:
                     events=self.store.events(),
                 )
             return response
+
+    def set_appearance(self, data):
+        if not isinstance(data, dict) or set(data) - {
+            "avatar",
+            "quality",
+            "fps",
+            "motion",
+        }:
+            raise ValueError("Unknown appearance setting")
+        with self.lock:
+            candidate = {**self.appearance, **data}
+            if candidate["avatar"] not in (
+                "ethereal",
+                "sentinel",
+                "mascot",
+                "abstract",
+            ):
+                raise ValueError("Choose an available avatar")
+            if candidate["quality"] not in ("economy", "balanced", "high"):
+                raise ValueError("Choose a valid rendering quality")
+            if type(candidate["fps"]) is not int or candidate["fps"] not in (
+                15,
+                30,
+                60,
+            ):
+                raise ValueError("Choose 15, 30 or 60 FPS")
+            if candidate["motion"] not in ("system", "full", "reduced"):
+                raise ValueError("Choose a valid motion preference")
+            self.appearance = candidate
+            self.store.set("appearance", candidate)
+            self.publish()
+            return self.snapshot()
 
     def _save_current(self):
         if self.selected:

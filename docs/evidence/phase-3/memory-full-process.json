@@ -1,0 +1,18 @@
+{
+  "metric": "Linux smaps_rollup Pss, bytes; includes the entire isolated compositor and fresh browser tree, without subtracting their normal base footprint; excludes Ollama inference",
+  "state": "idle",
+  "resolution": [
+    1920,
+    1080
+  ],
+  "browser_process_count": 11,
+  "groups": {
+    "whole_isolated_compositor": 396871680,
+    "whole_fresh_browser_tree": 432393216,
+    "controller": 38558720,
+    "gateway": 10021888
+  },
+  "total_bytes": 877845504,
+  "total_mib": 837.1787109375,
+  "budget_mib": 750
+}

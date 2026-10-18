@@ -12,3 +12,11 @@ Phase 3 records each selected font, icon, mesh, texture or generated avatar with
 The phase 1 energy-core shader in `gnome-extension/extension.js` is original procedural code, with no external raster/mesh/font dependency. Qualification PNGs in `docs/evidence/phase-1` capture the isolated test desktop and synthetic window/icon. They are evidence, not final avatar art.
 
 Phase 2 uses original authored SVG geometry for navigation/status icons in `templates/index.html` and an original geometric A mark rasterized as `static/icons/avalon-{192,512}.png`. The WebGL preview in `static/core.js` is original procedural code based on the same core vocabulary as the desktop shader. Ubuntu Sans/Noto Sans/system sans are resolved from the host; no font files are redistributed. The shared-library/catalog workflow was consulted; no third-party creative pack was copied. Phase 2 screenshots contain synthetic qualification conversations and are evidence rather than reusable avatar assets.
+
+## Phase 3 original avatar assets
+
+`static/presence.glsl` is original procedural signed-distance geometry and GPU material/lighting code. `gnome-extension/presence.glsl` is an identical runtime copy. The four forms are independently authored from the owner’s concept direction: cyan/gold humanoid, hooded violet sentinel, teal/gold mascot and orbital abstract core. No external mesh, texture, font or model output was imported. Native geometry, light, particles and time/state uniforms produce the animation; no image/video is used as the live body.
+
+`static/avatars/{ethereal,sentinel,mascot,abstract}.png` are 600×800 deterministic still captures of this exact renderer at idle, high detail, still motion/time zero. Reproduce with `scripts/render-avatar-previews.py`. They serve as selection thumbnails and unavailable-GPU fallbacks. Their inputs and renderer source are versioned; local book/creative-pack originals remain intact. The shared asset inventory was searched; no third-party pack asset was selected or license inferred. The actual owner reference was inspected directly.
+
+The native and UI PNGs under `docs/evidence/phase-3` are qualification screenshots, with synthetic state fixtures or the recorded real local-model greeting. The compositor fixtures run only in a disposable guarded test Shell. These are evidence, not photographed/generated textures.

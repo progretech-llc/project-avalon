@@ -1,0 +1,30 @@
+{
+  "platform": "opencode",
+  "model": "qwen3-coder:30b",
+  "real_working_state_observations": [
+    {
+      "state": 2,
+      "avatar": "ethereal",
+      "model": "qwen3-coder:30b"
+    },
+    {
+      "state": 2,
+      "avatar": "sentinel",
+      "model": "qwen3-coder:30b"
+    },
+    {
+      "state": 2,
+      "avatar": "mascot",
+      "model": "qwen3-coder:30b"
+    },
+    {
+      "state": 2,
+      "avatar": "abstract",
+      "model": "qwen3-coder:30b"
+    }
+  ],
+  "active_turn_preserved_across_avatar_changes": true,
+  "runtime_pid_unchanged": true,
+  "native_completion_observed": true,
+  "reply": "Hello! I'm Avalon, your friendly local AI assistant here to help with coding and development tasks right on your machine."
+}

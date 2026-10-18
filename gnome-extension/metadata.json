@@ -1,9 +1,9 @@
 {
   "uuid": "avalon@progretech.com",
   "name": "Project Avalon",
-  "description": "GPU desktop embodiment foundation for LampOS. Exclusive with Constellation.",
+  "description": "Live GPU avatars for one LampOS AI presence. Exclusive with Constellation.",
   "shell-version": [
     "50"
   ],
-  "version": 2
+  "version": 3
 }

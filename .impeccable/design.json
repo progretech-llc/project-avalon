@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-18T19:10:49.799505+00:00",
+  "generatedAt": "2026-10-18T19:46:30.281561+00:00",
   "title": "Design System: Project Avalon",
   "extensions": {
     "colorMeta": {
@@ -178,9 +178,9 @@
         "purpose": "State feedback; disabled under reduced motion."
       },
       {
-        "name": "core-cadence",
-        "value": "33ms normal; 1000ms reduced motion",
-        "purpose": "Render throttle; reduced motion freezes shader time."
+        "name": "avatar-cadence",
+        "value": "15/30/60 FPS target; still mode redraws on change",
+        "purpose": "Animated render cap; system reduced motion or explicit still freezes shader time; hidden/offscreen preview drawing pauses."
       }
     ],
     "breakpoints": [
@@ -202,6 +202,16 @@
       {
         "name": "mobile",
         "value": "640px",
+        "condition": "max-width"
+      },
+      {
+        "name": "appearance-two-column",
+        "value": "1050px",
+        "condition": "max-width"
+      },
+      {
+        "name": "appearance-single-settings",
+        "value": "600px",
         "condition": "max-width"
       }
     ]
@@ -259,14 +269,29 @@
       "description": "Observed text-only status, not an interactive filter.",
       "html": "<span class=\"ds-current\">Current</span>",
       "css": ".ds-current{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;font-size:15px;font-size:.8rem;color:var(--cyan,#79dce8);}"
+    },
+    {
+      "name": "Selected avatar card",
+      "kind": "card",
+      "refersTo": "avatar-card-selected",
+      "description": "Selected card caption and structural treatment; renderer capture occupies a 3:4 image region in the application.",
+      "html": "<button class=\"ds-avatar\" aria-pressed=\"true\"><span>Abstract Core<small>Orbital light · pure motion</small></span></button>",
+      "css": ".ds-avatar{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;background:var(--surface,#101721);color:var(--text,#edf4fa);padding:0;text-align:left;border:1px solid var(--cyan,#79dce8);border-radius:12px;outline:2px solid var(--cyan,#79dce8);outline-offset:3px;overflow:hidden;cursor:pointer;transition:background 150ms,border-color 150ms}.ds-avatar span{display:block;padding:16px;font-size:1rem}.ds-avatar small{display:block;color:var(--muted,#a0b0c1);font-size:.8rem;margin-top:6px}.ds-avatar:hover{background:#202d3c;border-color:#60768b}.ds-avatar:active{background:#27394a}.ds-avatar:focus-visible{outline:2px solid var(--cyan,#79dce8);outline-offset:3px}@media(prefers-reduced-motion:reduce){.ds-avatar{transition:none}}"
+    },
+    {
+      "name": "Appearance select",
+      "kind": "input",
+      "description": "Labeled native motion setting with supporting text; same treatment serves detail and frame limit.",
+      "html": "<label class=\"ds-setting-label\" for=\"ds-motion\">Motion</label><select class=\"ds-setting\" id=\"ds-motion\"><option>Follow Ubuntu / browser</option><option>Animated</option><option>Still · react to state changes</option></select><p class=\"ds-setting-help\">Still mode keeps the avatar and state colors without continuous motion.</p>",
+      "css": ".ds-setting-label{display:block;margin-bottom:10px;font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;color:var(--text,#edf4fa);font-size:.8rem}.ds-setting{width:100%;font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;font-size:15px;background:#0c131d;color:var(--text,#edf4fa);border:1px solid #394757;border-radius:8px;padding:11px 12px}.ds-setting:focus-visible{outline:2px solid var(--cyan,#79dce8);outline-offset:3px}.ds-setting-help{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;color:var(--muted,#a0b0c1);font-size:.85rem;line-height:1.6;margin-top:12px}"
     }
   ],
   "narrative": {
-    "overview": "Avalon uses quiet dark surfaces, precise borders and a cyan and gold living energy core. The implemented phase 2 interface supports one selected model and session with readable conversation, explicit access controls and visible runtime state. This document captures the existing system.\n\nThe owner\u2019s supplied wide_cinematic_poster_mockup_layout_of_a_desktop.png remains the ultimate luminous avatar reference. The phase 2 abstract core is a technical visualization; full humanoid, sentinel and mascot embodiment remains phase 3. Surface composition stays in .impeccable/surfaces/control-center.md.",
+    "overview": "Avalon uses quiet dark surfaces, precise borders and a luminous GPU avatar. The implemented interface supports one selected model and session with readable conversation, explicit access controls and visible runtime state. This document captures the existing system.\n\nThe owner’s supplied wide_cinematic_poster_mockup_layout_of_a_desktop.png remains the ultimate luminous avatar reference. Phase 3 delivers four original shader bodies: cyan/gold Ethereal Human, violet Neon Sentinel with a tapered open cowl, recessed dark mask and angular armor, teal/gold Progre Mascot and purple orbital Abstract Core. Surface composition stays in .impeccable/surfaces/control-center.md and appearance.md.",
     "keyCharacteristics": [
       "Dark tonal surfaces and thin structural borders.",
       "Native Ubuntu typography and original vector stroke icons.",
-      "Runtime-linked core motion with text equivalents."
+      "Runtime-linked avatar motion with text equivalents and a selected-avatar still fallback."
     ],
     "rules": [
       {
@@ -282,10 +307,10 @@
       "Do reuse the native Ubuntu font stack and original local vectors."
     ],
     "donts": [
-      "Don\u2019t present the phase 2 core as a finished avatar.",
-      "Don\u2019t invent telemetry, activity or available device capabilities.",
-      "Don\u2019t add decorative glow to ordinary controls and containers.",
-      "Don\u2019t replace the owner-pinned visual authority with a new identity."
+      "Don’t treat a static avatar capture as proof of live runtime activity.",
+      "Don’t invent telemetry, activity or available device capabilities.",
+      "Don’t add decorative glow to ordinary controls and containers.",
+      "Don’t replace the owner-pinned visual authority with a new identity."
     ]
   }
 }
