@@ -1,0 +1,18 @@
+{
+  "allowed_edit": {
+    "status": "complete",
+    "reply": "Completed.\n```"
+  },
+  "allowed_file": "AVALON_EDIT_OK",
+  "revoked_edit": {
+    "status": "complete",
+    "reply": "DENIED"
+  },
+  "revoked_file_absent": true,
+  "cancellation": {
+    "runtime": "inactive",
+    "stale_events": false,
+    "partial_status": "cancelled"
+  },
+  "reconnected": true
+}

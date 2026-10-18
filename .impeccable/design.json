@@ -1,0 +1,291 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-18T19:10:49.799505+00:00",
+  "title": "Design System: Project Avalon",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Bg",
+        "tonalRamp": [
+          "oklch(from #090e16 15% c h)",
+          "oklch(from #090e16 26% c h)",
+          "oklch(from #090e16 38% c h)",
+          "oklch(from #090e16 49% c h)",
+          "oklch(from #090e16 61% c h)",
+          "oklch(from #090e16 72% c h)",
+          "oklch(from #090e16 84% c h)",
+          "oklch(from #090e16 95% c h)"
+        ],
+        "rampPurpose": "Derived panel preview; not application tokens."
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "tonalRamp": [
+          "oklch(from #101721 15% c h)",
+          "oklch(from #101721 26% c h)",
+          "oklch(from #101721 38% c h)",
+          "oklch(from #101721 49% c h)",
+          "oklch(from #101721 61% c h)",
+          "oklch(from #101721 72% c h)",
+          "oklch(from #101721 84% c h)",
+          "oklch(from #101721 95% c h)"
+        ],
+        "rampPurpose": "Derived panel preview; not application tokens."
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised",
+        "tonalRamp": [
+          "oklch(from #151e2a 15% c h)",
+          "oklch(from #151e2a 26% c h)",
+          "oklch(from #151e2a 38% c h)",
+          "oklch(from #151e2a 49% c h)",
+          "oklch(from #151e2a 61% c h)",
+          "oklch(from #151e2a 72% c h)",
+          "oklch(from #151e2a 84% c h)",
+          "oklch(from #151e2a 95% c h)"
+        ],
+        "rampPurpose": "Derived panel preview; not application tokens."
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Border",
+        "tonalRamp": [
+          "oklch(from #293442 15% c h)",
+          "oklch(from #293442 26% c h)",
+          "oklch(from #293442 38% c h)",
+          "oklch(from #293442 49% c h)",
+          "oklch(from #293442 61% c h)",
+          "oklch(from #293442 72% c h)",
+          "oklch(from #293442 84% c h)",
+          "oklch(from #293442 95% c h)"
+        ],
+        "rampPurpose": "Derived panel preview; not application tokens."
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Text",
+        "tonalRamp": [
+          "oklch(from #edf4fa 15% c h)",
+          "oklch(from #edf4fa 26% c h)",
+          "oklch(from #edf4fa 38% c h)",
+          "oklch(from #edf4fa 49% c h)",
+          "oklch(from #edf4fa 61% c h)",
+          "oklch(from #edf4fa 72% c h)",
+          "oklch(from #edf4fa 84% c h)",
+          "oklch(from #edf4fa 95% c h)"
+        ],
+        "rampPurpose": "Derived panel preview; not application tokens."
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "tonalRamp": [
+          "oklch(from #a0b0c1 15% c h)",
+          "oklch(from #a0b0c1 26% c h)",
+          "oklch(from #a0b0c1 38% c h)",
+          "oklch(from #a0b0c1 49% c h)",
+          "oklch(from #a0b0c1 61% c h)",
+          "oklch(from #a0b0c1 72% c h)",
+          "oklch(from #a0b0c1 84% c h)",
+          "oklch(from #a0b0c1 95% c h)"
+        ],
+        "rampPurpose": "Derived panel preview; not application tokens."
+      },
+      "cyan": {
+        "role": "primary",
+        "displayName": "Cyan",
+        "tonalRamp": [
+          "oklch(from #79dce8 15% c h)",
+          "oklch(from #79dce8 26% c h)",
+          "oklch(from #79dce8 38% c h)",
+          "oklch(from #79dce8 49% c h)",
+          "oklch(from #79dce8 61% c h)",
+          "oklch(from #79dce8 72% c h)",
+          "oklch(from #79dce8 84% c h)",
+          "oklch(from #79dce8 95% c h)"
+        ],
+        "rampPurpose": "Derived panel preview; not application tokens."
+      },
+      "purple": {
+        "role": "secondary",
+        "displayName": "Purple",
+        "tonalRamp": [
+          "oklch(from #b4a1ee 15% c h)",
+          "oklch(from #b4a1ee 26% c h)",
+          "oklch(from #b4a1ee 38% c h)",
+          "oklch(from #b4a1ee 49% c h)",
+          "oklch(from #b4a1ee 61% c h)",
+          "oklch(from #b4a1ee 72% c h)",
+          "oklch(from #b4a1ee 84% c h)",
+          "oklch(from #b4a1ee 95% c h)"
+        ],
+        "rampPurpose": "Derived panel preview; not application tokens."
+      },
+      "gold": {
+        "role": "secondary",
+        "displayName": "Gold",
+        "tonalRamp": [
+          "oklch(from #e4bf7a 15% c h)",
+          "oklch(from #e4bf7a 26% c h)",
+          "oklch(from #e4bf7a 38% c h)",
+          "oklch(from #e4bf7a 49% c h)",
+          "oklch(from #e4bf7a 61% c h)",
+          "oklch(from #e4bf7a 72% c h)",
+          "oklch(from #e4bf7a 84% c h)",
+          "oklch(from #e4bf7a 95% c h)"
+        ],
+        "rampPurpose": "Derived panel preview; not application tokens."
+      },
+      "red": {
+        "role": "secondary",
+        "displayName": "Red",
+        "tonalRamp": [
+          "oklch(from #ffaaa1 15% c h)",
+          "oklch(from #ffaaa1 26% c h)",
+          "oklch(from #ffaaa1 38% c h)",
+          "oklch(from #ffaaa1 49% c h)",
+          "oklch(from #ffaaa1 61% c h)",
+          "oklch(from #ffaaa1 72% c h)",
+          "oklch(from #ffaaa1 84% c h)",
+          "oklch(from #ffaaa1 95% c h)"
+        ],
+        "rampPurpose": "Derived panel preview; not application tokens."
+      },
+      "green": {
+        "role": "secondary",
+        "displayName": "Green",
+        "tonalRamp": [
+          "oklch(from #8dd7b1 15% c h)",
+          "oklch(from #8dd7b1 26% c h)",
+          "oklch(from #8dd7b1 38% c h)",
+          "oklch(from #8dd7b1 49% c h)",
+          "oklch(from #8dd7b1 61% c h)",
+          "oklch(from #8dd7b1 72% c h)",
+          "oklch(from #8dd7b1 84% c h)",
+          "oklch(from #8dd7b1 95% c h)"
+        ],
+        "rampPurpose": "Derived panel preview; not application tokens."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "control-transition",
+        "value": "background 150ms, border-color 150ms",
+        "purpose": "State feedback; disabled under reduced motion."
+      },
+      {
+        "name": "core-cadence",
+        "value": "33ms normal; 1000ms reduced motion",
+        "purpose": "Render throttle; reduced motion freezes shader time."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide-preview",
+        "value": "1600px",
+        "condition": "min-width"
+      },
+      {
+        "name": "compact-desktop",
+        "value": "1150px",
+        "condition": "max-width"
+      },
+      {
+        "name": "tablet",
+        "value": "900px",
+        "condition": "max-width"
+      },
+      {
+        "name": "mobile",
+        "value": "640px",
+        "condition": "max-width"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Observed action variant.",
+      "html": "<button class=\"ds-primary\">Connect</button>",
+      "css": ".ds-primary{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;font-size:15px;background:var(--cyan,#79dce8);color:#07141b;border:1px solid var(--cyan,#79dce8);border-radius:8px;padding:10px 16px;cursor:pointer;transition:background 150ms,border-color 150ms;} .ds-primary:hover:not(:disabled){background:#b0eef5;border-color:#b0eef5;} .ds-primary:active:not(:disabled){background:#5ec5d1;} .ds-primary:focus-visible{outline:2px solid var(--cyan,#79dce8);outline-offset:3px;} .ds-primary:disabled{opacity:.42;cursor:not-allowed;} @media(prefers-reduced-motion:reduce){.ds-primary{transition:none;}}"
+    },
+    {
+      "name": "Secondary button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Observed action variant.",
+      "html": "<button class=\"ds-secondary\">Connect</button>",
+      "css": ".ds-secondary{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;font-size:15px;background:var(--raised,#151e2a);color:var(--text,#edf4fa);border:1px solid var(--border,#293442);border-radius:8px;padding:10px 16px;cursor:pointer;transition:background 150ms,border-color 150ms;} .ds-secondary:hover:not(:disabled){background:#202d3c;border-color:#60768b;} .ds-secondary:active:not(:disabled){background:#27394a;} .ds-secondary:focus-visible{outline:2px solid var(--cyan,#79dce8);outline-offset:3px;} .ds-secondary:disabled{opacity:.42;cursor:not-allowed;} @media(prefers-reduced-motion:reduce){.ds-secondary{transition:none;}}"
+    },
+    {
+      "name": "Quiet button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Observed action variant.",
+      "html": "<button class=\"ds-quiet\">Connect</button>",
+      "css": ".ds-quiet{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;font-size:15px;background:transparent;color:var(--text,#edf4fa);border:1px solid var(--border,#293442);border-radius:8px;padding:10px 16px;cursor:pointer;transition:background 150ms,border-color 150ms;} .ds-quiet:hover:not(:disabled){background:#202d3c;border-color:#60768b;} .ds-quiet:active:not(:disabled){background:#27394a;} .ds-quiet:focus-visible{outline:2px solid var(--cyan,#79dce8);outline-offset:3px;} .ds-quiet:disabled{opacity:.42;cursor:not-allowed;} @media(prefers-reduced-motion:reduce){.ds-quiet{transition:none;}}"
+    },
+    {
+      "name": "Text field",
+      "kind": "input",
+      "description": "Native labeled conversation-name field.",
+      "html": "<label class=\"ds-label\" for=\"ds-title\">Conversation name</label><input class=\"ds-field\" id=\"ds-title\" value=\"New conversation\">",
+      "css": ".ds-label{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;font-size:15px;display:block;font-size:.8rem;color:#c6d3df;margin-bottom:8px;} .ds-field{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;font-size:15px;background:#0c131d;color:var(--text,#edf4fa);border:1px solid #394757;border-radius:8px;padding:11px 12px;} .ds-field:focus-visible{outline:2px solid var(--cyan,#79dce8);outline-offset:3px;}"
+    },
+    {
+      "name": "Selected navigation",
+      "kind": "nav",
+      "description": "Original presence icon and selected page treatment.",
+      "html": "<nav><button class=\"ds-nav\" aria-current=\"page\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"8\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 1v3m0 16v3M1 12h3m16 0h3\"/></svg>Presence</button></nav>",
+      "css": ".ds-nav{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;font-size:15px;display:flex;align-items:center;gap:12px;background:#172534;color:var(--cyan,#79dce8);border:1px solid #314558;border-radius:8px;padding:13px 12px;cursor:pointer;} .ds-nav svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;} .ds-nav:hover{background:#202d3c;border-color:#60768b;} .ds-nav:active{background:#27394a;} .ds-nav:focus-visible{outline:2px solid var(--cyan,#79dce8);outline-offset:3px;}"
+    },
+    {
+      "name": "Conversation container",
+      "kind": "card",
+      "refersTo": "conversation",
+      "description": "Tonal panel with a separated header.",
+      "html": "<section class=\"ds-conversation\"><header>A new conversation</header><p>Connect a local model, then start a conversation.</p></section>",
+      "css": ".ds-conversation{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;font-size:15px;background:var(--surface,#101721);color:var(--text,#edf4fa);border:1px solid var(--border,#293442);border-radius:var(--radius,12px);overflow:hidden;} .ds-conversation header{padding:20px 24px;border-bottom:1px solid var(--border,#293442);font-weight:500;} .ds-conversation p{padding:24px;margin:0;color:var(--muted,#a0b0c1);line-height:1.55;}"
+    },
+    {
+      "name": "Current-session tag",
+      "kind": "chip",
+      "description": "Observed text-only status, not an interactive filter.",
+      "html": "<span class=\"ds-current\">Current</span>",
+      "css": ".ds-current{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;font-size:15px;font-size:.8rem;color:var(--cyan,#79dce8);}"
+    }
+  ],
+  "narrative": {
+    "overview": "Avalon uses quiet dark surfaces, precise borders and a cyan and gold living energy core. The implemented phase 2 interface supports one selected model and session with readable conversation, explicit access controls and visible runtime state. This document captures the existing system.\n\nThe owner\u2019s supplied wide_cinematic_poster_mockup_layout_of_a_desktop.png remains the ultimate luminous avatar reference. The phase 2 abstract core is a technical visualization; full humanoid, sentinel and mascot embodiment remains phase 3. Surface composition stays in .impeccable/surfaces/control-center.md.",
+    "keyCharacteristics": [
+      "Dark tonal surfaces and thin structural borders.",
+      "Native Ubuntu typography and original vector stroke icons.",
+      "Runtime-linked core motion with text equivalents."
+    ],
+    "rules": [
+      {
+        "name": "The Verified State Rule",
+        "body": "Core state, connection label and controls follow the same runtime state; visual energy must not imply fabricated activity.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do preserve visible cyan keyboard focus and explicit field labels.",
+      "Do keep runtime status readable independently of the GPU preview.",
+      "Do preserve truthful selected-model, capability and permission labels.",
+      "Do reuse the native Ubuntu font stack and original local vectors."
+    ],
+    "donts": [
+      "Don\u2019t present the phase 2 core as a finished avatar.",
+      "Don\u2019t invent telemetry, activity or available device capabilities.",
+      "Don\u2019t add decorative glow to ordinary controls and containers.",
+      "Don\u2019t replace the owner-pinned visual authority with a new identity."
+    ]
+  }
+}

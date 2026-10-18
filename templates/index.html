@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#090e16" />
+    <title>Project Avalon</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/static/icons/avalon-192.png" />
+    <link rel="stylesheet" href="/static/app.css" />
+    <script src="/static/app.js" type="module"></script>
+  </head>
+  <body data-status="disconnected">
+    <svg class="icon-defs" aria-hidden="true">
+      <defs>
+        <symbol id="i-presence" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="8" />
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 1v3m0 16v3M1 12h3m16 0h3" />
+        </symbol>
+        <symbol id="i-chat" viewBox="0 0 24 24">
+          <path
+            d="M20 15a3 3 0 0 1-3 3H8l-5 3V6a3 3 0 0 1 3-3h11a3 3 0 0 1 3 3zM7 8h9M7 12h6"
+          />
+        </symbol>
+        <symbol id="i-shield" viewBox="0 0 24 24">
+          <path d="m12 2 8 4v6c0 5-8 10-8 10S4 17 4 12V6zM9 12l2 2 4-5" />
+        </symbol>
+        <symbol id="i-sessions" viewBox="0 0 24 24">
+          <rect x="5" y="7" width="15" height="13" rx="2" />
+          <path d="M16 3H4a2 2 0 0 0-2 2v11M9 12h7m-7 4h5" />
+        </symbol>
+        <symbol id="i-arrow" viewBox="0 0 24 24">
+          <path d="M5 12h14m-5-5 5 5-5 5" />
+        </symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24">
+          <path d="M12 5v14M5 12h14" />
+        </symbol>
+        <symbol id="i-stop" viewBox="0 0 24 24">
+          <rect x="6" y="6" width="12" height="12" rx="2" />
+        </symbol>
+      </defs>
+    </svg>
+    <div class="shell">
+      <aside class="rail" aria-label="Application navigation">
+        <a class="brand" href="/" aria-label="Avalon home"
+          ><svg viewBox="0 0 32 36" aria-hidden="true">
+            <path d="m3 30 13-25 13 25M9 21h14M16 5v9" /></svg
+          ><span>Avalon<small>PROGRETECH</small></span></a
+        >
+        <nav>
+          <button
+            class="nav-item selected"
+            data-page="presence"
+            aria-current="page"
+          >
+            <svg class="icon"><use href="#i-presence" /></svg>Presence
+          </button>
+          <button class="nav-item" data-page="sessions">
+            <svg class="icon"><use href="#i-sessions" /></svg>Sessions
+          </button>
+          <button class="nav-item" data-page="permissions">
+            <svg class="icon"><use href="#i-shield" /></svg>Permissions
+          </button>
+        </nav>
+        <div class="rail-bottom">
+          <span class="local-dot"></span>Local by default<small
+            >One presence. One selected model.</small
+          >
+        </div>
+      </aside>
+      <main>
+        <header class="page-header">
+          <div>
+            <h1 id="page-title">Presence</h1>
+            <p>Your AI, here with you.</p>
+          </div>
+          <label class="wallpaper-control"
+            >Wallpaper<select id="wallpaper-mode" aria-label="Active wallpaper">
+              <option value="avalon">Avalon</option>
+              <option value="desktop">Ubuntu desktop</option>
+              <option value="constellation">Constellation</option>
+            </select></label
+          >
+        </header>
+        <div id="notice" role="status" aria-live="polite" hidden></div>
+        <div id="access-note" class="access-note">
+          Opening your local connection…
+        </div>
+        <section data-view="presence" class="presence-view">
+          <div class="presence-column">
+            <div class="body-preview">
+              <canvas
+                id="presence-canvas"
+                aria-label="Live energy-core preview"
+              ></canvas>
+              <div class="preview-caption">
+                <span id="connection-label" class="connection-label"
+                  >Disconnected</span
+                >
+                <h2 id="body-state">Ready when you are.</h2>
+                <p id="body-detail">Connect an installed local model.</p>
+              </div>
+            </div>
+            <div class="target-controls">
+              <div class="section-heading">
+                <h2>The mind behind the presence</h2>
+                <button id="refresh-models" class="text-button">
+                  Refresh models
+                </button>
+              </div>
+              <label for="platform">Target AI platform</label
+              ><select id="platform">
+                <option value="opencode">OpenCode</option>
+              </select>
+              <p id="platform-note" class="field-note">
+                Local Ollama models on this computer.
+              </p>
+              <label for="model">Installed local model</label
+              ><select id="model">
+                <option value="">Loading installed models…</option>
+              </select>
+              <p id="model-note" class="field-note">
+                No models are downloaded automatically.
+              </p>
+              <div class="target-actions">
+                <button id="connect" class="primary">Connect</button
+                ><button id="disconnect" class="quiet">Disconnect</button>
+              </div>
+              <p class="field-note">
+                Switching the model stops the current turn and starts a new
+                conversation.
+              </p>
+            </div>
+          </div>
+          <section class="conversation" aria-label="Conversation">
+            <header class="conversation-header">
+              <div>
+                <h2 id="session-title">A new conversation</h2>
+                <p id="active-model">No model connected</p>
+              </div>
+              <button
+                id="new-session"
+                class="icon-button"
+                title="New conversation"
+                aria-label="New conversation"
+              >
+                <svg class="icon"><use href="#i-plus" /></svg>
+              </button>
+            </header>
+            <form id="new-session-form" class="new-session-form" hidden>
+              <label for="new-title">Conversation name</label
+              ><input
+                id="new-title"
+                maxlength="80"
+                value="New conversation"
+              /><label for="new-workspace"
+                >Workspace folder <span class="optional">optional</span></label
+              ><input
+                id="new-workspace"
+                placeholder="Use a private Avalon workspace"
+              />
+              <p class="field-note">
+                Use an absolute path to an existing folder. Creating a
+                conversation stops the current turn.
+              </p>
+              <div class="inline-actions">
+                <button type="submit" class="primary">
+                  Create conversation</button
+                ><button type="button" id="cancel-new" class="quiet">
+                  Cancel
+                </button>
+              </div>
+            </form>
+            <div
+              id="messages"
+              class="messages"
+              aria-live="polite"
+              aria-relevant="additions text"
+            >
+              <div class="empty-chat">
+                <svg class="icon"><use href="#i-chat" /></svg>
+                <h3>Make room for a thought.</h3>
+                <p>
+                  Connect a local model, then start a conversation. Your
+                  selected model gives this presence its voice in chat.
+                </p>
+              </div>
+            </div>
+            <div id="turn-bar" class="turn-bar">
+              <span id="turn-status">No active turn</span
+              ><button id="stop" class="stop-button" disabled>
+                <svg class="icon"><use href="#i-stop" /></svg>Stop
+              </button>
+            </div>
+            <form id="chat-form" class="composer">
+              <label for="message" class="sr-only">Message to Avalon</label
+              ><textarea
+                id="message"
+                rows="2"
+                maxlength="16000"
+                placeholder="Ask something. Give it a task."
+                aria-describedby="composer-hint"
+              ></textarea
+              ><button
+                id="send"
+                type="submit"
+                class="primary"
+                aria-label="Send message"
+              >
+                <svg class="icon"><use href="#i-arrow" /></svg>
+              </button>
+              <p id="composer-hint">
+                Enter to send · Shift + Enter for a new line
+              </p>
+            </form>
+          </section>
+        </section>
+        <section data-view="sessions" class="sessions-view" hidden>
+          <div class="view-intro">
+            <h2>Conversations you can return to.</h2>
+            <p>
+              Sessions stay on this computer. Only one gives the wallpaper its
+              presence at a time.
+            </p>
+          </div>
+          <div id="session-list" class="session-list"></div>
+        </section>
+        <section data-view="permissions" class="permissions-view" hidden>
+          <div class="view-intro">
+            <h2>A clear boundary for every task.</h2>
+            <p>
+              These settings are enforced by the selected runtime. Changing
+              access restarts the connection and stops a running turn.
+            </p>
+          </div>
+          <form id="permission-form" class="permission-form">
+            <label for="permission-title">Conversation name</label
+            ><input id="permission-title" maxlength="80" /><label
+              for="permission-mode"
+              >Workspace access</label
+            ><select id="permission-mode">
+              <option value="chat">Conversation only — no tools</option>
+              <option value="read">Read workspace — no changes</option>
+              <option value="edit">Read and edit workspace files</option>
+            </select>
+            <p id="workspace-path" class="workspace-path">
+              Connect a model to create a workspace.
+            </p>
+            <label class="checkbox-label"
+              ><input type="checkbox" id="status-commands" /><span
+                >Allow status commands<small
+                  >Only pwd, git status --short and git diff --stat. Other
+                  commands remain denied.</small
+                ></span
+              ></label
+            >
+            <div class="policy-note">
+              <svg class="icon"><use href="#i-shield" /></svg>
+              <p>
+                Other folders, web tools and additional agents remain denied.
+                Microphone and camera are off.
+              </p>
+            </div>
+            <button type="submit" id="save-permissions" class="primary">
+              Apply access and restart
+            </button>
+          </form>
+          <section class="activity">
+            <h2>Recent activity</h2>
+            <ol id="activity-list"></ol>
+          </section>
+        </section>
+        <footer class="page-footer">
+          <span id="footer-target">OpenCode + Ollama</span
+          ><span>Microphone off <i></i> Camera off</span>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>

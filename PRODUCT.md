@@ -6,11 +6,11 @@
 
 web
 
-The full control center is a local web interface inside an Ubuntu desktop product. GNOME/Wayland integration owns the wallpaper. Phase 1 uses a native GTK diagnostic launcher.
+The full control center is a local web interface inside an Ubuntu desktop product. GNOME/Wayland integration owns the wallpaper. The on-demand application launcher opens the authenticated local Presence Control Center.
 
 ## Stack
 
-Delegated: Ed accepted the recommended native Ubuntu integration and local control-center direction on 2026-10-18. Phase 1 uses a bounded GNOME GPU shader actor, a separate Go host for LampOS's exported gateway, and Python setup/diagnostics. The complete control-center web stack is selected in phase 2.
+Delegated: Ed accepted the recommended native Ubuntu integration and local control-center direction on 2026-10-18. Phase 1 uses a bounded GNOME GPU shader actor, a separate Go host for LampOS's exported gateway, and Python setup/diagnostics. Phase 2 uses Flask, Waitress and a local PWA with a WebGL preview; Python owns the single WebSocket runtime connection, SQLite stores private local sessions, and systemd reaps runtime children on cancellation.
 
 ## Users and purpose
 

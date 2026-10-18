@@ -1,0 +1,20 @@
+{
+  "states": {
+    "disconnected": 0,
+    "idle": 1,
+    "working": 2,
+    "writing": 3,
+    "executing": 4,
+    "completed": 5,
+    "failed": 6,
+    "cancelled": 7,
+    "switching": 8
+  },
+  "stale_disconnected": true,
+  "legacy_background_restore": {
+    "light": "file:///usr/share/backgrounds/warty-final-ubuntu.png",
+    "default": "file:///usr/share/backgrounds/warty-final-ubuntu.png",
+    "dark": "file:///home/test/custom.png"
+  },
+  "custom_preserved": true
+}

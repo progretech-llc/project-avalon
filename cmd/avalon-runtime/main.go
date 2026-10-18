@@ -18,8 +18,9 @@ import (
 )
 
 type settings struct {
-	Token  string `json:"token"`
-	Binary string `json:"binary"`
+	Token     string `json:"token"`
+	Binary    string `json:"binary"`
+	Workspace string `json:"workspace"`
 }
 
 func main() {
@@ -66,6 +67,13 @@ func main() {
 	for _, key := range []string{"OPENCODE_CONFIG_CONTENT", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "OPENROUTER_API_KEY"} {
 		os.Unsetenv(key)
 	}
+	workspace := cfg.Workspace
+	if workspace == "" {
+		workspace = filepath.Join(*state, "workspace")
+	}
+	if !filepath.IsAbs(workspace) {
+		log.Fatal("Workspace must be absolute")
+	}
 	ln, err := net.Listen("tcp", "127.0.0.1:18893")
 	if err != nil {
 		log.Fatal(err)
@@ -74,8 +82,8 @@ func main() {
 	defer cancel()
 	server := gatewayd.New(gatewayd.Config{
 		Token: cfg.Token, Bin: cfg.Binary, Home: filepath.Join(*state, "agent-home"),
-		Workspace: filepath.Join(*state, "workspace"), SessionFile: filepath.Join(*state, "session.json"),
-		AttachDir: filepath.Join(*state, "attachments"), TurnTimeout: 120 * time.Second,
+		Workspace: workspace, SessionFile: filepath.Join(*state, "session.json"),
+		AttachDir: filepath.Join(*state, "attachments"), TurnTimeout: 300 * time.Second,
 	}, ln)
 	if err := server.Serve(ctx); err != nil && !errors.Is(err, context.Canceled) {
 		log.Fatal(err)

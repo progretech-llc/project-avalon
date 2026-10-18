@@ -1,0 +1,15 @@
+{
+  "model_switch": {
+    "from": "qwen3-coder:30b",
+    "to": "qwen3:1.7b",
+    "returned_to": "qwen3-coder:30b",
+    "old_gateway_reaped": true,
+    "old_children_reaped": 1,
+    "cancelled": true
+  },
+  "service_restart": {
+    "selected_session_retained": true,
+    "messages_retained": true,
+    "no_replayed_turn": true
+  }
+}

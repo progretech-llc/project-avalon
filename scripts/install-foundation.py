@@ -29,7 +29,7 @@ def main():
     app.write_text(f'''[Desktop Entry]
 Type=Application
 Name=Project Avalon
-Comment=Open the Avalon foundation controls
+Comment=Open the Avalon Presence Control Center
 Exec=/usr/bin/python3 "{ROOT}/avalon.py"
 Icon=preferences-desktop-wallpaper
 Terminal=false

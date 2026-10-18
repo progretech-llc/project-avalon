@@ -1,0 +1,18 @@
+{
+  "avalon_python_tests": 19,
+  "constellation_python_tests": 53,
+  "constellation_native_tests": 4,
+  "go_tests": "passed (hosts compile; no Go test files)",
+  "javascript_ownership": "passed",
+  "javascript_syntax": "passed",
+  "duplicate_controller": "rejected by held flock",
+  "duplicate_gateway": "rejected by held flock",
+  "constellation_commit": "52a0da7ecbd4d932ba0b9fd63c06e15e196a063b",
+  "installed_controller": "on demand, active, no autostart",
+  "login_wallpaper": "Avalon active, Constellation disabled",
+  "installed_extension_version": 2,
+  "loaded_login_extension_version": 1,
+  "activity_extension_activation": "next logout/login",
+  "old_gnome_crash_date": "2026-10-18 14:01:43",
+  "old_gnome_crash_cause": "unresolved; Mesa frame is not proof of cause"
+}
