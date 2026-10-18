@@ -145,7 +145,15 @@ The four bodies, flowing energy filaments and sparse star field are original sha
 
 Avatar buttons show original renderer captures at a 3:4 aspect ratio above a name and muted description. Surface background, 12px corners and a 1px border match existing panels. Selection uses aria-pressed, a cyan border and a 2px cyan outline offset by 3px. Caption padding is 16px, reducing to 12px on phones. The 1100px-wide appearance surface uses four cards with 18px gaps, two columns at 1050px and 14px gaps at 600px.
 
-Labeled native selects expose Detail (Economy/Balanced/High), Frame limit (15/30/60 FPS) and Motion (Follow Ubuntu / browser, Animated, Still). The settings grid uses three columns with 24px gaps, two at 1050px and one at 600px. Apply appearance reuses the primary button. Appearance changes preserve the active mind and conversation; newly installed native renderer code requires logout/login.
+Labeled native selects expose Detail (Economy/Balanced/High), Frame limit (15/30/60 FPS) and Motion (Follow Ubuntu / browser, Animated, Still). The settings grid uses three columns with 24px gaps, two at 1050px and one at 600px. Save power while idle is a checked-by-default native checkbox spanning the settings grid, with supporting text below. It limits idle/disconnected animation to up to 15 FPS; agent and voice activity use the selected 15/30/60 FPS limit. Apply appearance reuses the primary button. Appearance changes preserve the active mind and conversation; newly installed native renderer code requires logout/login.
+
+### Devices, voice and approval controls
+
+Devices reuse native labeled selects, checkboxes and primary/quiet actions. A plain live status line and native 160px × 12px audio meter pair activity with text. Voice and Vision use two columns with 32px row and 48px column gaps in a 1060px-wide surface, stacking at 700px. Camera actions wrap with 12px gaps. Missing saved devices remain explicitly unavailable; image capability is explained beside Vision.
+
+The conversation voice toolbar wraps with 8px gaps, 12px labels, 36px minimum button height and 16px icons. Record command, Send recording, Mute / discard and Read reply follow actual capture, speech, connection and lock state. Stop all stays in the page header. Locked-state text explains that unlocking does not restart capture.
+
+Workspace approval appears inline in the conversation on the existing surface, with a top border and 20px 24px padding. Its gold question, wrapping exact path, one-minute expiry text, primary Approve once and quiet Deny actions distinguish the request. Approve once is disabled while Ubuntu is locked. The separate Ubuntu actions permission reuses the checkbox and quiet apply action. Physical microphone, speaker and camera qualification and phase 3 CPU acceptance remain open.
 
 ## Do's and Don'ts
 
@@ -160,3 +168,7 @@ Labeled native selects expose Detail (Economy/Balanced/High), Frame limit (15/30
 - Don’t replace the owner-pinned visual authority with a new identity.
 
 Evidence: extracted from static/app.css, templates/index.html, static/app.js, static/core.js and static/presence.glsl; visually checked against .impeccable/review/desktop.png, appearance-desktop.png, mobile.png and appearance-mobile.png, plus docs/evidence/phase-3/wallpaper-sentinel.png. PRODUCT.md and the confirmed control-center and appearance direction contracts establish scope and owner authority. Captures establish delivered geometry, selected-card treatment and responsive composition; still fallback and motion behavior are grounded in source, not inferred from still captures. Inherited extraction drift and detector color/font advisories remain outside this ordinary extension; existing palette and typography tokens are preserved.
+
+Phase 4 extension evidence: PRODUCT.md, .impeccable/surfaces/devices.md, templates/index.html, static/app.css and static/app.js; opened .impeccable/review/devices-desktop.png, devices-mobile.png, devices-permissions.png, desktop.png and mobile.png, plus docs/evidence/phase-4/approval-request.png. Captures show locked device controls, responsive forms and toolbar, desktop-access settings and a real model-proposed workspace approval with Approve once disabled while locked. The supplied qualification record reports denial; the still establishes the pending request, not execution or denial. Existing palette/type extraction drift remains outside this extension and is preserved.
+
+Idle-saver extension evidence: checked the latest templates/index.html, static/app.css and static/app.js and opened .impeccable/review/appearance-desktop.png and appearance-mobile.png. Both show the checked Save power while idle control and its explanatory copy in the existing form system. This setting does not establish that the fixed-30-FPS CPU acceptance target passed; that target remains open.

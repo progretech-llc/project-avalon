@@ -1,0 +1,57 @@
+{
+  "fixture_matrix": [
+    [
+      "ethereal",
+      "listening"
+    ],
+    [
+      "ethereal",
+      "speaking"
+    ],
+    [
+      "ethereal",
+      "approval"
+    ],
+    [
+      "sentinel",
+      "listening"
+    ],
+    [
+      "sentinel",
+      "speaking"
+    ],
+    [
+      "sentinel",
+      "approval"
+    ],
+    [
+      "mascot",
+      "listening"
+    ],
+    [
+      "mascot",
+      "speaking"
+    ],
+    [
+      "mascot",
+      "approval"
+    ],
+    [
+      "abstract",
+      "listening"
+    ],
+    [
+      "abstract",
+      "speaking"
+    ],
+    [
+      "abstract",
+      "approval"
+    ]
+  ],
+  "idle_saver_and_active_frame_limits": true,
+  "gaze_and_amplitude_applied": true,
+  "invalid_sensors_neutral": true,
+  "still_mode_ignores_tracking_but_updates_state": true,
+  "method": "Synthetic state files \u2192 actual native Cogl uniforms. Not physical camera or microphone qualification."
+}

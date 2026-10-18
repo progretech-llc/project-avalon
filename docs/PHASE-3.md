@@ -1,6 +1,6 @@
 # Phase 3 — Embodiment and visual finish
 
-**Acceptance status:** implementation and visual/functional qualification delivered; CPU acceptance remains open. The final three consecutive 30-second samples average **3.41% incremental CPU**, above the <3% one-core target. Earlier lower samples are not used to claim a pass. Further optimization and login-session measurement are required.
+**Acceptance status:** implementation and visual/functional qualification delivered; CPU acceptance remains open. The final three consecutive 30-second samples average **3.51% incremental CPU**, above the <3% one-core target. Earlier lower samples are not used to claim a pass. An explicit idle-power mode now caps idle/disconnected animation at 15 FPS and preserves the selected cap during agent/voice activity; its separate measurement does not erase the fixed-30 result. Fixed-30 optimization and login-session measurement remain required.
 
 ## What changed
 
@@ -19,16 +19,16 @@ A lost/unavailable browser GPU displays an actual still capture of the selected 
 
 ## Rendering and resource budget
 
-The same original `presence.glsl` source is shipped in `static/` and the GNOME extension. A regression check keeps both copies identical. Browser previews and desktop rendering use bounded 36/52/72 ray steps by quality; browser quality also caps pixel density. Native rendering uses a cached offscreen source and queues only effect repaint when uniforms change, following [Clutter's effect repaint API](https://mutter.gnome.org/clutter/method.Effect.queue_repaint.html). Frame scheduling follows the selected cap rather than polling at an unrelated frequency.
+The same original `presence.glsl` source is shipped in `static/` and the GNOME extension. A regression check keeps both copies identical. Browser previews and desktop rendering use bounded 36/52/72 ray steps by quality; browser quality also caps pixel density. Native rendering now uses a direct `Clutter.Content` / `Cogl.Pipeline` paint node, removing the intermediate source-texture pass; uniform locations/values are cached and only changed values are sent. Earlier offscreen measurements are retained separately. Frame scheduling follows the selected cap rather than polling at an unrelated frequency.
 
 Measurements use a disposable native GPU GNOME Shell 50.1 on this MS-S1 Max, at the attached monitor's **1920×1080, scale 1, one-monitor** mode. Mutter selected its existing NVIDIA boot-VGA compositor renderer; the desktop GPU selection was not changed. Ollama inference remains on the Radeon under workstation policy. These are real native GPU compositor measurements at the physical monitor's resolution; physical scanout, long-run login-session performance and multi-monitor lifecycle remain phase 5 checks.
 
-- Frame metric: [Clutter Stage after-paint](https://gnome.pages.gitlab.gnome.org/mutter/clutter/signal.Stage.after-paint.html), which occurs before physical presentation. Thirty-second disabled baseline and three consecutive thirty-second animated samples after ten seconds of warmup; default humanoid/balanced/30 FPS.
+- Frame metric: [Clutter Stage after-paint](https://gnome.pages.gitlab.gnome.org/mutter/clutter/signal.Stage.after-paint.html), which occurs before physical presentation. Thirty-second disabled baseline and three consecutive thirty-second animated samples after ten seconds of warmup; default humanoid/balanced, selected cap 30 FPS and explicit idle saver at 15 FPS. Separate fixed-30 samples preserve the original failing case.
 - CPU metric: `/proc` user+system ticks; **100% means one CPU core**, with the disabled baseline subtracted. No normalization over the machine's 32 logical CPUs hides the cost.
 - Latency metric: 36 atomic sanitized fixture writes to the applied native shader state, sampled every 5 ms; this covers all four avatars × nine states. Separate real-model checks prove the actual event path. Physical input-to-display latency is not claimed.
 - Resident memory metric: sum of Linux `smaps_rollup` **PSS** for the compositor increment over a cold disabled baseline, the entire fresh Chromium tree displaying the panel, controller and gateway. The baseline is measured before any avatar pipeline exists, and the process identity must match. Only ordinary GNOME base memory, Ollama inference and test instrumentation are excluded; full fresh-browser overhead is included. Both full-process and incremental counts are retained. The initial full-GNOME count exceeded 750 MiB (`memory-full-process.json`); that includes the existing desktop, so the Avalon footprint uses the measured cold-baseline increment. This is a single-panel idle measurement, not a peak/concurrent-window guarantee.
 
-Exact samples, duration, accounting and gate results are in `evidence/phase-3/performance.json`, `renderer.json` and `memory.json`. Optional 15/60 FPS modes are exercised, with actual rates recorded rather than promised.
+The default idle-power mode measured **14.89 FPS and 1.83% incremental CPU** across three consecutive 30-second intervals at 1920×1080. Active states use the selected cap, exercised separately. The fixed-30 result is retained as `performance-fixed-30-final.json` and remains above the original CPU target; the idle policy is explicit, not presented as a fixed-30 pass. Exact samples, duration, accounting and gate results are in `evidence/phase-3/performance.json`, `renderer.json` and `memory.json`. Optional 15/60 FPS modes are exercised, with actual rates recorded rather than promised.
 
 ## Qualification
 
@@ -45,7 +45,7 @@ The native fixture driver enables unsafe Eval **only in the isolated test compos
 
 The control-center update is installed and immediately visible through the Project Avalon application shortcut. Its default remains OpenCode with a locally installed Ollama model. Avatar art is original procedural geometry/material code; thumbnail PNGs are deterministic captures of that same shader, with provenance in ASSETS.md.
 
-GNOME caches imported modules and its effect pipeline. The installed desktop extension is now version 3, while the existing login session can continue using its previously loaded version. **Log out/in once to load the new desktop avatars.** No forced logout, Shell replacement, driver change or production unsafe-Eval mode was used. Avalon remains the selected wallpaper; Constellation remains disabled.
+GNOME caches imported modules and its renderer module. The installed desktop extension is now version 3, while the existing login session can continue using its previously loaded version. **Log out/in once to load the new desktop avatars.** No forced logout, Shell replacement, driver change or production unsafe-Eval mode was used. Avalon remains the selected wallpaper; Constellation remains disabled.
 
 The older GNOME crash report predates this phase; its cause remains unresolved, and this renderer work does not claim to fix it. Phase 4 remains voice, camera, device selection and Ubuntu action/approval integration; phase 5 retains reboot/suspend, real-login lifecycle, multi-monitor and release packaging qualification. Alternative CLI targets retain their explicit phase 2 blockers.
 

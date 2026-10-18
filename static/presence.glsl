@@ -1,4 +1,5 @@
 // Original Avalon volume renderer. Shared verbatim by WebGL and GNOME/Cogl.
+uniform float u_gaze_x,u_gaze_y,u_level;
 float avHash(vec3 p) { p=fract(p*0.1031); p+=dot(p,p.yzx+33.33); return fract((p.x+p.y)*p.z); }
 float avNoise(vec3 p) {
     vec3 i=floor(p),f=fract(p); f=f*f*(3.0-2.0*f);
@@ -11,7 +12,7 @@ float avCapsule(vec3 p,vec3 a,vec3 b,float r) { vec3 q=p-a,v=b-a;return length(q
 float avBox(vec3 p,vec3 bounds) { vec3 q=abs(p)-bounds;return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0); }
 float avBody(vec3 p,float avatar,float t) {
     if(avatar>2.5) {
-        p.xz=avRotate(0.3*t)*p.xz;
+        p.xz=avRotate(0.3*t+u_gaze_x*.3)*p.xz;
         float a=length(vec2(length(p.xz)-0.58,p.y))-0.04;
         p.xy=avRotate(0.94)*p.xy;
         float b=length(vec2(length(p.xy)-0.59,p.z))-0.028;
@@ -20,7 +21,7 @@ float avBody(vec3 p,float avatar,float t) {
     float breathe=sin(t*1.15)*0.012;
     if(avatar>1.5) {
         p.y+=0.20;
-        vec3 h=p-vec3(0,0.34,0);h.xz=avRotate(sin(t*0.47)*0.13)*h.xz;
+        vec3 h=p-vec3(0,0.34,0);h.xz=avRotate(sin(t*0.47)*0.13+u_gaze_x*.28)*h.xz;
         float head=avEllipsoid(h,vec3(0.56,0.46,0.40));
         float body=avEllipsoid(p-vec3(0,-0.37,0),vec3(0.37+breathe,0.43,0.30));
         float ears=avEllipsoid(vec3(abs(p.x)-0.59,p.y-0.32,p.z),vec3(0.13,0.30,0.24));
@@ -31,7 +32,7 @@ float avBody(vec3 p,float avatar,float t) {
     }
     if(avatar>0.5) {
         // Projecting tapered cowl, recessed mask and constructed armor silhouette.
-        vec3 h=p-vec3(0,0.97,-0.03);h.xz=avRotate(sin(t*.31)*.06)*h.xz;
+        vec3 h=p-vec3(0,0.97,-0.03);h.xz=avRotate(sin(t*.31)*.06+u_gaze_x*.28)*h.xz;
         float taper=.40-.16*smoothstep(0.0,.53,h.y);
         float hood=avEllipsoid(h,vec3(taper,.53,.33));
         float opening=avEllipsoid(h-vec3(0,-.025,.27),vec3(.275,.37,.36));
@@ -53,7 +54,7 @@ float avBody(vec3 p,float avatar,float t) {
         body=avSmooth(body,hand,.04);body=avSmooth(body,hood,.055);
         return min(body,mask);
     }
-    vec3 head=p-vec3(0,0.94,0);head.xz=avRotate(sin(t*0.31)*0.10)*head.xz;head.yz=avRotate(0.025*sin(t*.45))*head.yz;
+    vec3 head=p-vec3(0,0.94,0);head.xz=avRotate(sin(t*0.31)*0.10+u_gaze_x*.28)*head.xz;head.yz=avRotate(0.025*sin(t*.45)+u_gaze_y*.15)*head.yz;
     float skull=avEllipsoid(head,vec3(0.26,0.36,0.24));
     float jaw=avEllipsoid(head-vec3(0,-0.17,0.035),vec3(0.195,0.20,0.205));
     float face=avSmooth(skull,jaw,0.06);
@@ -88,7 +89,10 @@ vec3 avalon(vec2 uv,float aspect,float time,float state,float avatar,float quali
     vec3 statusColor=cold;
     if(state>4.5&&state<5.5)statusColor=vec3(0.12,1.0,0.48);
     if(state>5.5&&state<6.5)statusColor=vec3(1.0,0.18,0.09);
-    if(state>7.5)statusColor=vec3(0.75,0.27,1.0);
+    if(state>7.5&&state<8.5)statusColor=vec3(0.75,0.27,1.0);
+    if(state>8.5&&state<9.5)statusColor=vec3(.10,.65,1.0);
+    if(state>9.5&&state<10.5)statusColor=warm;
+    if(state>10.5)statusColor=vec3(1.0,.65,.10);
     float connected=state<0.5?0.40:1.0;
     vec3 color=vec3(0.012,0.019,0.038);
     float cloud=avNoise(vec3(screen*3.0,t*0.025));
@@ -138,10 +142,10 @@ vec3 avalon(vec2 uv,float aspect,float time,float state,float avatar,float quali
         }
         vec3 core=pos-vec3(0,avatar>1.5?-0.64:0.02,0.28);
         float heart=exp(-15.0*length(core));
-        color+=mix(warm,statusColor,step(4.5,state)*0.6)*heart*(2.8+0.7*sin(t*2.0));
+        color+=mix(warm,statusColor,step(4.5,state)*0.6)*heart*(2.8+0.7*sin(t*2.0)+u_level*4.0);
         if(avatar>1.5&&avatar<2.5) {
             // Rounded visor and original friendly face, attached to moving head.
-            vec3 h=pos-vec3(0,0.14,0);h.xz=avRotate(sin(t*.47)*.13)*h.xz;
+            vec3 h=pos-vec3(0,0.14,0);h.xz=avRotate(sin(t*.47)*.13+u_gaze_x*.28)*h.xz;
             float visor=step(abs(h.x),.41)*step(abs(h.y),.22)*step(.29,h.z);
             float metallic=pow(max(0.0,dot(reflect(rd,n),normalize(vec3(-.4,.8,1)))),24.0);
             vec3 ceramic=cold*(.12+light*.55+rim*.16)+vec3(.65,.88,.84)*metallic*.65;
@@ -160,6 +164,7 @@ vec3 avalon(vec2 uv,float aspect,float time,float state,float avatar,float quali
     }
     float coreY=avatar>2.5?0.0:avatar>1.5?-0.64:0.02;
     float coreGlow=exp(-23.0*length(p-vec2(0,coreY)));
-    color+=mix(warm,statusColor,step(4.5,state)*0.6)*coreGlow*(0.8+0.2*sin(t*2.0))*connected;
+    color+=mix(warm,statusColor,step(4.5,state)*0.6)*coreGlow*(0.8+0.2*sin(t*2.0)+u_level*2.0)*connected;
+    if(state>10.5)color+=statusColor*.12*exp(-1.5*length(p));
     return 1.0-exp(-color*1.24);
 }

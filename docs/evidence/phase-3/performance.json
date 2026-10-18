@@ -1,5 +1,5 @@
 {
-  "compositor_pid": 2653649,
+  "compositor_pid": 2816866,
   "resolution": [
     [
       1920,
@@ -10,46 +10,48 @@
   "quality": "balanced",
   "avatar": "ethereal",
   "frame_limit": 30,
+  "effective_idle_frame_limit": 15,
+  "policy": "Idle power saver enabled: idle/disconnected capped at 15 FPS; active states use selected cap (separately exercised by qualify-embodiment.py)",
   "compositor": "GNOME Shell 50.1, isolated native headless GPU compositor",
   "frame_metric": "Clutter Stage after-paint; not physical scanout",
   "cpu_metric": "process user+system ticks; 100% is one CPU core; active minus disabled baseline",
   "baseline": {
-    "seconds": 30.00009287701687,
-    "cpu_percent_one_core": 0.3999987616436089,
-    "stage_paints_per_second": 0.03333323013696741,
-    "rss_bytes": 431165440,
-    "pss_bytes": 233589760
+    "seconds": 30.000384156010114,
+    "cpu_percent_one_core": 0.2333303454915144,
+    "stage_paints_per_second": 0.0666658129975756,
+    "rss_bytes": 429703168,
+    "pss_bytes": 230561792
   },
   "active": {
-    "seconds": 90.00021559698507,
-    "cpu_percent_one_core": 3.8111019815322553,
-    "stage_paints_per_second": 30.08881681046457,
-    "rss_bytes": 431882240,
-    "pss_bytes": 230619136
+    "seconds": 90.0002721369965,
+    "cpu_percent_one_core": 2.066660417613791,
+    "stage_paints_per_second": 14.888843868830536,
+    "rss_bytes": 430907392,
+    "pss_bytes": 229704704
   },
   "active_intervals": [
     {
-      "seconds": 30.000076473981608,
-      "cpu_percent_one_core": 3.9333233067701934,
-      "stage_paints_per_second": 30.09992327130071,
-      "rss_bytes": 431841280,
-      "pss_bytes": 230580224
+      "seconds": 30.00007314400864,
+      "cpu_percent_one_core": 2.1666613840566997,
+      "stage_paints_per_second": 14.899963671897616,
+      "rss_bytes": 430247936,
+      "pss_bytes": 229050368
     },
     {
-      "seconds": 30.000073166011134,
-      "cpu_percent_one_core": 3.6999909762139676,
-      "stage_paints_per_second": 30.0999265902812,
-      "rss_bytes": 431915008,
-      "pss_bytes": 230652928
+      "seconds": 30.000129460007884,
+      "cpu_percent_one_core": 2.0333245588595528,
+      "stage_paints_per_second": 14.899935701806886,
+      "rss_bytes": 430845952,
+      "pss_bytes": 229648384
     },
     {
-      "seconds": 30.00006595699233,
-      "cpu_percent_one_core": 3.7999916454660068,
-      "stage_paints_per_second": 30.066600563248574,
-      "rss_bytes": 431882240,
-      "pss_bytes": 230619136
+      "seconds": 30.00006953297998,
+      "cpu_percent_one_core": 1.9999953644787458,
+      "stage_paints_per_second": 14.866632209292009,
+      "rss_bytes": 430907392,
+      "pss_bytes": 229704704
     }
   ],
-  "incremental_cpu_percent_one_core": 3.4111032198886466,
+  "incremental_cpu_percent_one_core": 1.8333300721222765,
   "logical_cpus": 32
 }

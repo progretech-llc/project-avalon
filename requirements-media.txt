@@ -1,0 +1,6 @@
+# Isolated Python 3.12 environment; CPU auxiliary speech/CV only.
+piper-tts==1.8.0
+faster-whisper==1.2.1
+opencv-python-headless==5.0.0.93
+pydantic==2.14.1
+typing-extensions==4.16.0

@@ -179,8 +179,8 @@
       },
       {
         "name": "avatar-cadence",
-        "value": "15/30/60 FPS target; still mode redraws on change",
-        "purpose": "Animated render cap; system reduced motion or explicit still freezes shader time; hidden/offscreen preview drawing pauses."
+        "value": "15/30/60 FPS target; default idle saver caps idle/disconnected at 15 FPS; still mode redraws on change",
+        "purpose": "Agent and voice activity use the selected frame limit. Checked-by-default Save power while idle exposes the idle cap explicitly. System reduced motion or explicit still freezes shader time; hidden/offscreen preview drawing pauses. Fixed-30-FPS CPU acceptance remains open."
       }
     ],
     "breakpoints": [
@@ -212,6 +212,11 @@
       {
         "name": "appearance-single-settings",
         "value": "600px",
+        "condition": "max-width"
+      },
+      {
+        "name": "devices-single-column",
+        "value": "700px",
         "condition": "max-width"
       }
     ]
@@ -284,6 +289,13 @@
       "description": "Labeled native motion setting with supporting text; same treatment serves detail and frame limit.",
       "html": "<label class=\"ds-setting-label\" for=\"ds-motion\">Motion</label><select class=\"ds-setting\" id=\"ds-motion\"><option>Follow Ubuntu / browser</option><option>Animated</option><option>Still · react to state changes</option></select><p class=\"ds-setting-help\">Still mode keeps the avatar and state colors without continuous motion.</p>",
       "css": ".ds-setting-label{display:block;margin-bottom:10px;font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;color:var(--text,#edf4fa);font-size:.8rem}.ds-setting{width:100%;font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;font-size:15px;background:#0c131d;color:var(--text,#edf4fa);border:1px solid #394757;border-radius:8px;padding:11px 12px}.ds-setting:focus-visible{outline:2px solid var(--cyan,#79dce8);outline-offset:3px}.ds-setting-help{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;color:var(--muted,#a0b0c1);font-size:.85rem;line-height:1.6;margin-top:12px}"
+    },
+    {
+      "name": "Device activity",
+      "kind": "custom",
+      "description": "Native audio meter paired with textual activity; locked-state guidance remains explicit. This example is inactive, not hardware qualification.",
+      "html": "<div class=\"ds-device-live\"><meter min=\"0\" max=\"1\" value=\"0\" aria-label=\"Audio activity\"></meter><span>No devices active</span></div>",
+      "css": ".ds-device-live{display:flex;align-items:center;gap:16px;margin-bottom:32px;color:var(--muted,#a0b0c1);font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif}.ds-device-live meter{width:160px;height:12px;accent-color:var(--cyan,#79dce8)}"
     }
   ],
   "narrative": {

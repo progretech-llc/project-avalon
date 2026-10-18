@@ -1,0 +1,17 @@
+{
+  "python_unit_tests": 36,
+  "result": "pass",
+  "coverage": [
+    "existing session/runtime/permissions/authentication",
+    "media settings and missing-device refusal",
+    "locked dispatch refusal",
+    "fenced exactly-once transcript dispatch",
+    "late playback suppressed after mute",
+    "stop/switch/lock cleanup and no capture resume",
+    "selected nonvision model refusal",
+    "private visual state excludes raw media",
+    "typed action denial/revocation/expiry/switch/lock/single use",
+    "new endpoints authentication and CSRF"
+  ],
+  "physical_hardware_qualified": false
+}

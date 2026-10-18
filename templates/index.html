@@ -7,8 +7,8 @@
     <title>Project Avalon</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/static/icons/avalon-192.png" />
-    <link rel="stylesheet" href="/static/app.css?v=3" />
-    <script src="/static/app.js?v=3" type="module"></script>
+    <link rel="stylesheet" href="/static/app.css?v=4.2" />
+    <script src="/static/app.js?v=4.2" type="module"></script>
   </head>
   <body data-status="disconnected">
     <svg class="icon-defs" aria-hidden="true">
@@ -17,6 +17,10 @@
           <circle cx="12" cy="12" r="8" />
           <circle cx="12" cy="12" r="3" />
           <path d="M12 1v3m0 16v3M1 12h3m16 0h3" />
+        </symbol>
+        <symbol id="i-devices" viewBox="0 0 24 24">
+          <rect x="9" y="2" width="6" height="12" rx="3" />
+          <path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8" />
         </symbol>
         <symbol id="i-chat" viewBox="0 0 24 24">
           <path
@@ -59,6 +63,9 @@
           <button class="nav-item" data-page="appearance">
             <svg class="icon"><use href="#i-presence" /></svg>Appearance
           </button>
+          <button class="nav-item" data-page="devices">
+            <svg class="icon"><use href="#i-devices" /></svg>Devices
+          </button>
           <button class="nav-item" data-page="sessions">
             <svg class="icon"><use href="#i-sessions" /></svg>Sessions
           </button>
@@ -78,6 +85,7 @@
             <h1 id="page-title">Presence</h1>
             <p>Your AI, here with you.</p>
           </div>
+          <button id="stop-all" class="stop-button">Stop all</button>
           <label class="wallpaper-control"
             >Wallpaper<select id="wallpaper-mode" aria-label="Active wallpaper">
               <option value="avalon">Avalon</option>
@@ -203,6 +211,30 @@
                 <svg class="icon"><use href="#i-stop" /></svg>Stop
               </button>
             </div>
+            <div
+              id="approval-panel"
+              class="approval-panel"
+              hidden
+              role="status"
+            >
+              <h3>Open this workspace in Ubuntu Files?</h3>
+              <p id="approval-path"></p>
+              <p class="field-note">
+                Requested by this turn. Approval expires after one minute.
+              </p>
+              <div class="inline-actions">
+                <button id="approve-action" class="primary">Approve once</button
+                ><button id="deny-action" class="quiet">Deny</button>
+              </div>
+            </div>
+            <div class="voice-toolbar">
+              <button id="record" class="quiet">
+                <svg class="icon"><use href="#i-devices" /></svg>Record command</button
+              ><button id="send-recording" class="primary" hidden>
+                Send recording</button
+              ><button id="mute" class="quiet">Mute / discard</button
+              ><button id="read-reply" class="quiet">Read reply</button>
+            </div>
             <form id="chat-form" class="composer">
               <label for="message" class="sr-only">Message to Avalon</label
               ><textarea
@@ -269,17 +301,120 @@
               <svg class="icon"><use href="#i-shield" /></svg>
               <p>
                 Other folders, web tools and additional agents remain denied.
-                Microphone and camera are off.
+                Camera and microphone are controlled separately in Devices.
               </p>
             </div>
             <button type="submit" id="save-permissions" class="primary">
               Apply access and restart
             </button>
           </form>
+          <form id="desktop-action-form" class="desktop-action-form">
+            <h2>Ubuntu actions</h2>
+            <label class="checkbox-label"
+              ><input id="allow-workspace-open" type="checkbox" /><span
+                >Allow requests to open this workspace<small
+                  >Each request requires your approval. Avalon can open this
+                  conversation’s folder in Files. Keyboard/mouse control, other
+                  folders and arbitrary commands remain unavailable.</small
+                ></span
+              ></label
+            ><button class="quiet" type="submit" id="save-desktop-actions">
+              Apply desktop access
+            </button>
+          </form>
           <section class="activity">
             <h2>Recent activity</h2>
             <ol id="activity-list"></ol>
           </section>
+        </section>
+        <section data-view="devices" class="devices-page" hidden>
+          <div class="view-intro">
+            <h2>A voice. A point of view.</h2>
+            <p>
+              Local speech and camera tracking for your selected model. Capture
+              starts only when you turn it on.
+            </p>
+          </div>
+          <div
+            id="device-status"
+            class="device-status"
+            role="status"
+            aria-live="polite"
+          >
+            Microphone off · Camera off
+          </div>
+          <div class="device-live">
+            <meter
+              id="audio-level"
+              min="0"
+              max="1"
+              value="0"
+              aria-label="Audio activity"
+            ></meter
+            ><span id="sensor-state">No devices active</span>
+          </div>
+          <form id="device-form" class="device-form">
+            <section>
+              <h3>Voice</h3>
+              <label for="audio-input">Microphone</label
+              ><select id="audio-input">
+                <option value="default">Follow Ubuntu default input</option>
+              </select>
+              <p class="field-note">
+                Choose the MS-S1 Max input when available, or the microphone you
+                use. A missing saved device stays unavailable.
+              </p>
+              <label for="audio-output">Speaker</label
+              ><select id="audio-output">
+                <option value="default">
+                  Follow Ubuntu default output
+                </option></select
+              ><label class="checkbox-label"
+                ><input id="spoken-replies" type="checkbox" checked /><span
+                  >Speak replies to voice commands<small
+                    >English speech recognition and Piper synthesis run locally
+                    on CPU. No cloud speech provider or second conversational
+                    model.</small
+                  ></span
+                ></label
+              >
+            </section>
+            <section>
+              <h3>Vision</h3>
+              <label for="camera-device">Camera</label
+              ><select id="camera-device">
+                <option value="">Choose a camera</option>
+              </select>
+              <p class="field-note">
+                Local face positions guide the avatar’s gaze. Camera images stay
+                in one private, replaceable frame until you explicitly ask your
+                selected model about the view. Sending a view also adds that
+                image to the agent’s local conversation history.
+              </p>
+              <p id="vision-capability" class="field-note">
+                Select a connected model to check vision support.
+              </p>
+            </section>
+            <div class="inline-actions">
+              <button id="save-devices" class="primary" type="submit">
+                Apply devices</button
+              ><button id="refresh-devices" class="quiet" type="button">
+                Refresh devices
+              </button>
+            </div>
+          </form>
+          <div class="device-actions">
+            <button id="camera-on" class="quiet">Enable camera gaze</button
+            ><button id="camera-off" class="quiet">Camera off</button
+            ><button id="ask-view" class="quiet">Ask about this view</button>
+          </div>
+          <p class="field-note">
+            Record command starts up to 15 seconds of microphone capture. Send
+            recording transcribes and sends it to the current conversation. Mute
+            discards capture and stops speech. Stop all also stops the agent and
+            camera. Locking Ubuntu stops all media; unlocking never resumes
+            capture automatically.
+          </p>
         </section>
         <section data-view="appearance" class="appearance-page" hidden>
           <div class="section-heading">
@@ -360,6 +495,14 @@
                 motion.
               </p>
             </div>
+            <label class="checkbox-label idle-saver"
+              ><input id="idle-saver" type="checkbox" checked /><span
+                >Save power while idle<small
+                  >Use up to 15 FPS while idle or disconnected. Agent and voice
+                  activity use your selected frame limit.</small
+                ></span
+              ></label
+            >
             <button class="primary" type="submit" id="save-appearance">
               Apply appearance
             </button>
@@ -372,7 +515,7 @@
         </section>
         <footer class="page-footer">
           <span id="footer-target">OpenCode + Ollama</span
-          ><span>Microphone off <i></i> Camera off</span>
+          ><span id="media-footer">Microphone off <i></i> Camera off</span>
         </footer>
       </main>
     </div>

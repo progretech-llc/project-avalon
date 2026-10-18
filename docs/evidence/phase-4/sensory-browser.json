@@ -1,0 +1,14 @@
+{
+  "actual_webgl_sensory_uniforms": true,
+  "still_mode_ignores_tracking_and_amplitude": true,
+  "active_poll_intervals_seconds": [
+    0.2120445870095864,
+    0.1928764769982081,
+    0.20702727098250762,
+    0.19915511601720937,
+    0.2000433100038208,
+    0.19926012298674323,
+    0.2027880449895747
+  ],
+  "method": "Clearly synthetic browser-only API fixture; real WebGL GPU. Production devices and selected model untouched."
+}

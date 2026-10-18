@@ -1,9 +1,9 @@
-const CACHE = "avalon-public-v3";
+const CACHE = "avalon-public-v4.2";
 const PUBLIC = [
-  "/static/app.css?v=3",
-  "/static/app.js?v=3",
-  "/static/core.js?v=3",
-  "/static/presence.glsl?v=3",
+  "/static/app.css?v=4.2",
+  "/static/app.js?v=4.2",
+  "/static/core.js?v=4.2",
+  "/static/presence.glsl?v=4.2",
   ...["ethereal", "sentinel", "mascot", "abstract"].map(
     (name) => `/static/avatars/${name}.png`,
   ),

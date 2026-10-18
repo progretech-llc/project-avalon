@@ -1,0 +1,8 @@
+{
+  "real_model_proposal": true,
+  "selected_model": "qwen3-coder:30b",
+  "explicit_denial_recorded": true,
+  "locked_approval_button_disabled": true,
+  "no_desktop_action_dispatched": true,
+  "method": "Real LampOS/OpenCode model proposal through production controller; owner denial. Successful native Files dispatch is covered by scoped unit fixture, not a physical locked-session test."
+}

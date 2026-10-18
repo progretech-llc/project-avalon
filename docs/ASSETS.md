@@ -20,3 +20,13 @@ Phase 2 uses original authored SVG geometry for navigation/status icons in `temp
 `static/avatars/{ethereal,sentinel,mascot,abstract}.png` are 600×800 deterministic still captures of this exact renderer at idle, high detail, still motion/time zero. Reproduce with `scripts/render-avatar-previews.py`. They serve as selection thumbnails and unavailable-GPU fallbacks. Their inputs and renderer source are versioned; local book/creative-pack originals remain intact. The shared asset inventory was searched; no third-party pack asset was selected or license inferred. The actual owner reference was inspected directly.
 
 The native and UI PNGs under `docs/evidence/phase-3` are qualification screenshots, with synthetic state fixtures or the recorded real local-model greeting. The compositor fixtures run only in a disposable guarded test Shell. These are evidence, not photographed/generated textures.
+
+## Phase 4 supporting media
+
+- Camera/STT interface/Piper backend: unmodified pinned LampOS leaf modules under `.deps/lampos`; revision in PHASE-1.md. Avalon does not start the appliance HAL or its separate realtime LLM.
+- Piper CLI: OHF-Voice `piper-tts` 1.8.0, GPL-3.0, [official project/CLI](https://github.com/OHF-Voice/piper1-gpl/blob/main/docs/CLI.md). Invoked as a separate local supporting process through LampOS's existing backend.
+- Voice: `rhasspy/piper-voices`, `en_US-ljspeech-medium`; actual MODEL_CARD inspected, names the [LJ Speech public-domain dataset](https://keithito.com/LJ-Speech-Dataset/). Source card/hash retained in model-sources.json. No Lessac/Ryan voice is used.
+- Recognition: SYSTRAN faster-whisper 1.2.1, [official project](https://github.com/SYSTRAN/faster-whisper); `Systran/faster-whisper-base.en`, derived from MIT-licensed Whisper. CPU/int8, English, explicit pinned download, no network at inference time.
+- Tracking: OpenCV 5.0.0.93 and its bundled frontal-face Haar cascade, Apache-2.0 distribution; native LampOS capture and deterministic damped positions, no additional VLM.
+- Device routing: native `pw-dump`, `pw-record`, `pw-play`; [PipeWire node routing properties](https://pipewire.pages.freedesktop.org/pipewire/page_man_pipewire-props_7.html) and installed WirePlumber `linking/find-defined-target.lua` inspected for explicit-target no-fallback behavior.
+- Original phase 3 avatar PNG reused only as an explicitly authored semantic-vision test fixture. Phase 4 ships no new third-party visual raster. No physical camera frame or microphone recording enters source/evidence. Synthetic PCM is kept only in ignored private runtime storage during tests.

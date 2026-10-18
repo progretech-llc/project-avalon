@@ -1,0 +1,18 @@
+{
+  "compositor_pid": 2653649,
+  "mode": "same compositor after matrix and driver warm-up; verified idle controller state; samples retained separately from cold failure",
+  "samples": [
+    {
+      "seconds": 30.00013056700118,
+      "cpu_percent_one_core": 3.0666533198757393
+    },
+    {
+      "seconds": 30.00011730598635,
+      "cpu_percent_one_core": 2.999988269447241
+    },
+    {
+      "seconds": 30.000096613017377,
+      "cpu_percent_one_core": 2.933323886757609
+    }
+  ]
+}

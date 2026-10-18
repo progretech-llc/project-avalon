@@ -101,6 +101,8 @@ results = {
     "quality": "balanced",
     "avatar": "ethereal",
     "frame_limit": 30,
+    "effective_idle_frame_limit": 15,
+    "policy": "Idle power saver enabled: idle/disconnected capped at 15 FPS; active states use selected cap (separately exercised by qualify-embodiment.py)",
     "compositor": "GNOME Shell 50.1, isolated native headless GPU compositor",
     "frame_metric": "Clutter Stage after-paint; not physical scanout",
     "cpu_metric": "process user+system ticks; 100% is one CPU core; active minus disabled baseline",

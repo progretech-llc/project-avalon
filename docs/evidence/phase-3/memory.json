@@ -1,8 +1,8 @@
 {
   "metric": "Linux smaps_rollup Pss, bytes; compositor increment over cold disabled baseline plus entire fresh browser tree/controller/gateway; excludes GNOME base and Ollama inference",
-  "compositor_disabled_baseline_bytes": 233589760,
-  "whole_compositor_bytes": 259594240,
-  "full_process_total_bytes": 742591488,
+  "compositor_disabled_baseline_bytes": 230561792,
+  "whole_compositor_bytes": 283827200,
+  "full_process_total_bytes": 782007296,
   "state": "idle",
   "resolution": [
     1920,
@@ -10,12 +10,12 @@
   ],
   "browser_process_count": 11,
   "groups": {
-    "incremental_compositor": 26004480,
-    "whole_fresh_browser_tree": 432115712,
-    "controller": 40810496,
-    "gateway": 10071040
+    "incremental_compositor": 53265408,
+    "whole_fresh_browser_tree": 444701696,
+    "controller": 43231232,
+    "gateway": 10247168
   },
-  "total_bytes": 509001728,
-  "total_mib": 485.421875,
+  "total_bytes": 551445504,
+  "total_mib": 525.8994140625,
   "budget_mib": 750
 }

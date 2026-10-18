@@ -1,0 +1,22 @@
+{
+  "method": "Synthesized English fixture, actual CPU recognition, real selected LampOS/OpenCode/Ollama turn, generated response PCM. Physical microphone/speaker/camera not exercised while Ubuntu is locked.",
+  "command": "Say hello in one sentence.",
+  "transcript": "Say hello in one sentence.",
+  "reply": "Hi there!",
+  "model": "qwen3-coder:30b",
+  "same_session_and_runtime": true,
+  "source_pcm_bytes": 78336,
+  "response_pcm_bytes": 34304,
+  "response_sha256": "908135f591e66935c903bdece8464d5e2d482a2e2a60d34137bcf8ca4cfcf74a",
+  "locked_operations_denied": [
+    "record",
+    "camera_on",
+    "read_reply"
+  ],
+  "device_counts": {
+    "cameras": 1,
+    "inputs": 2,
+    "outputs": 1
+  },
+  "capture_left_off": true
+}

@@ -1,10 +1,9 @@
 import json
-from pathlib import Path
 import queue
 import tempfile
-import threading
 import time
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from control import Catalog, Conflict, Controller, Unavailable
@@ -35,6 +34,7 @@ class FakeCatalog:
     def validate(self, name, mode):
         if name not in ("small:local", "large:local"):
             raise ValueError("Model missing")
+        return next(m for m in self.models() if m["name"] == name)
 
     def platforms(self):
         return [
@@ -231,6 +231,9 @@ class ControlTest(unittest.TestCase):
         self.control.chat("continue")
         identifier = self.control.active["id"]
         starts, stops = self.runtime.starts, self.runtime.stops
+        self.assertTrue(self.control.appearance["idle_saver"])
+        self.control.set_appearance({"idle_saver": False})
+        self.assertFalse(self.control.store.get("appearance")["idle_saver"])
         for avatar in ("ethereal", "sentinel", "mascot", "abstract"):
             state = self.control.set_appearance({"avatar": avatar, "motion": "reduced"})
             self.assertEqual(state["active_turn"], identifier)
@@ -257,6 +260,7 @@ class ControlTest(unittest.TestCase):
             {"quality": "unbounded"},
             {"motion": "rapid"},
             {"executable": "run"},
+            {"idle_saver": "yes"},
             [],
         ):
             with self.assertRaises(ValueError):

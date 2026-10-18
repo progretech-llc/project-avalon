@@ -2,11 +2,11 @@
 
 import json
 import os
-from pathlib import Path
 import secrets
 import shutil
 import subprocess
 import urllib.request
+from pathlib import Path
 
 
 def atomic_json(path, value):
@@ -60,7 +60,9 @@ def permissions(workspace, mode, commands=False):
     return policy
 
 
-def configure(state, model, workspace=None, mode="chat", commands=False):
+def configure(state, model, workspace=None, mode="chat", commands=False, vision=False):
+    if type(vision) is not bool:
+        raise ValueError("Invalid model vision capability")
     state = Path(state).resolve()
     with urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=5) as r:
         installed = {m["name"] for m in json.load(r)["models"]}
@@ -103,6 +105,10 @@ def configure(state, model, workspace=None, mode="chat", commands=False):
             }
         },
     }
+    if vision:
+        config["provider"]["ollama"]["models"][model].update(
+            attachment=True, modalities={"input": ["text", "image"], "output": ["text"]}
+        )
     atomic_json(state / "agent-home/.config/opencode/opencode.json", config)
     path = state / "gateway.json"
     gateway = (

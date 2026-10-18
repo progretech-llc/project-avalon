@@ -1,4 +1,4 @@
-import { mountCore } from "./core.js?v=3";
+import { mountCore } from "./core.js?v=4.2";
 const $ = (id) => document.getElementById(id);
 let csrf = "",
   authorized = false,
@@ -31,6 +31,9 @@ const labels = {
   failed: "Needs attention",
   cancelled: "Stopped",
   switching: "Switching",
+  listening: "Listening",
+  speaking: "Speaking",
+  approval: "Awaiting approval",
 };
 const headings = {
   disconnected: "Ready when you are.",
@@ -42,6 +45,9 @@ const headings = {
   failed: "Something needs attention.",
   cancelled: "A moment of quiet.",
   switching: "Changing the connection.",
+  listening: "I’m listening.",
+  speaking: "A voice for the thought.",
+  approval: "Your decision comes first.",
 };
 function showAvatarFallback() {
   $("presence-canvas").hidden = true;
@@ -87,6 +93,7 @@ function page(name) {
     presence: "Presence",
     sessions: "Sessions",
     appearance: "Appearance",
+    devices: "Devices",
     permissions: "Permissions",
   }[name];
 }
@@ -112,6 +119,59 @@ function controls() {
     !state.session ||
     ["disconnected", "cancelled", "failed", "switching"].includes(state.status);
   $("stop").disabled = !authorized || busy || !state.active_turn;
+  $("stop-all").disabled = !authorized || busy;
+  $("approve-action").disabled = !authorized || busy || !!state.devices?.locked;
+  $("deny-action").disabled = !authorized || busy;
+  const d = state.devices;
+  const hasCapture = d?.recording || d?.transcribing || d?.recording_ready;
+  $("record").disabled =
+    !authorized ||
+    busy ||
+    !d?.speech_ready ||
+    d.locked ||
+    !!state.active_turn ||
+    hasCapture ||
+    !state.session ||
+    ["disconnected", "cancelled", "failed", "switching"].includes(
+      state.runtime_status || state.status,
+    );
+  $("send-recording").hidden = !hasCapture;
+  $("send-recording").disabled =
+    !authorized || busy || d?.locked || d?.transcribing;
+  $("mute").disabled =
+    !authorized || busy || !(hasCapture || d?.speaking || d?.audio_busy);
+  $("read-reply").disabled =
+    !authorized ||
+    busy ||
+    !d?.speech_ready ||
+    d.locked ||
+    !!state.active_turn ||
+    hasCapture ||
+    !state.messages.some(
+      (m) => m.role === "assistant" && m.status === "complete",
+    );
+  $("camera-on").disabled =
+    !authorized ||
+    busy ||
+    d?.locked ||
+    !!d?.camera ||
+    d?.camera_starting ||
+    !d?.settings.camera;
+  $("camera-off").disabled =
+    !authorized || busy || !(d?.camera || d?.camera_starting);
+  const selected = models.find((m) => m.name === state.session?.model);
+  $("ask-view").disabled =
+    !authorized ||
+    busy ||
+    d?.locked ||
+    !d?.camera ||
+    !selected?.vision ||
+    !!state.active_turn;
+  $("vision-capability").textContent = selected?.vision
+    ? "Your selected model supports images. Ask about this view sends one camera frame to that same model."
+    : "Your selected model does not support images. Camera gaze still works. Select an installed vision model to ask about the view.";
+  for (const id of ["save-devices", "refresh-devices", "save-desktop-actions"])
+    $(id).disabled = !authorized || busy;
   $("save-permissions").disabled = !authorized || busy || !state.session;
   $("status-commands").disabled = $("permission-mode").value === "chat";
   if ($("status-commands").disabled) $("status-commands").checked = false;
@@ -266,10 +326,12 @@ function apply(data, force = false) {
       $("render-quality").value = a.quality;
       $("render-fps").value = String(a.fps);
       $("render-motion").value = a.motion;
+      $("idle-saver").checked = a.idle_saver !== false;
     }
   }
   document.body.dataset.status = state.status;
-  setCore(state.status, state.appearance);
+  setCore(state.status, state.appearance, state.sensors);
+  renderMedia();
   $("connection-label").textContent = labels[state.status] || "Unknown";
   $("body-state").textContent =
     headings[state.status] || "Check the connection.";
@@ -302,6 +364,10 @@ function apply(data, force = false) {
   if (data.messages) renderMessages(data.messages);
   if (data.sessions) renderSessions();
   if (data.events) renderEvents();
+  $("approval-panel").hidden = !state.pending_action;
+  $("approval-path").textContent = state.pending_action?.path || "";
+  if (!document.querySelector("#desktop-action-form:focus-within"))
+    $("allow-workspace-open").checked = !!state.desktop_actions;
   controls();
 }
 async function action(callback) {
@@ -367,7 +433,15 @@ async function poll() {
       notice(error.message);
     }
   }
-  setTimeout(poll, 700);
+  setTimeout(
+    poll,
+    state.active_turn ||
+      state.devices?.camera ||
+      state.devices?.recording ||
+      state.devices?.speaking
+      ? 180
+      : 700,
+  );
 }
 for (const button of document.querySelectorAll("[data-page]"))
   button.addEventListener("click", () => page(button.dataset.page));
@@ -470,6 +544,127 @@ $("permission-form").addEventListener("submit", (event) => {
     );
   });
 });
+function renderMedia() {
+  const d = state.devices;
+  if (!d) return;
+  const mic = d.recording ? "Microphone recording" : "Microphone off";
+  const camera = d.camera
+    ? "Camera on"
+    : d.camera_starting
+      ? "Camera opening…"
+      : "Camera off";
+  $("media-footer").textContent =
+    `${mic} · ${camera}${d.speaking ? " · Speaking" : ""}`;
+  $("device-status").textContent = d.locked
+    ? "Ubuntu is locked. Unlock it to use devices. Capture will stay off until you enable it."
+    : d.notice || `${mic} · ${camera}`;
+  $("sensor-state").textContent = d.transcribing
+    ? "Transcribing locally…"
+    : d.recording
+      ? "Recording · up to 15 seconds"
+      : d.speaking
+        ? "Speaking"
+        : d.camera
+          ? d.face
+            ? "Camera tracking a face"
+            : "Camera on · waiting for a face"
+          : "No devices active";
+  $("audio-level").value = d.level;
+  if (!document.querySelector("#device-form:focus-within")) {
+    $("audio-input").value = d.settings.input;
+    $("audio-output").value = d.settings.output;
+    $("camera-device").value = d.settings.camera;
+    $("spoken-replies").checked = d.settings.spoken_replies;
+  }
+}
+async function refreshDevices() {
+  const inventory = await api("/api/devices");
+  for (const [id, key, label, empty] of [
+    ["audio-input", "inputs", "Follow Ubuntu default input", "default"],
+    ["audio-output", "outputs", "Follow Ubuntu default output", "default"],
+    ["camera-device", "cameras", "Choose a camera", ""],
+  ]) {
+    const select = $(id),
+      saved =
+        state.devices?.settings[
+          { inputs: "input", outputs: "output", cameras: "camera" }[key]
+        ] || empty;
+    select.replaceChildren(
+      new Option(label, empty),
+      ...inventory[key].map((d) => new Option(d.name, d.id)),
+    );
+    if (![...select.options].some((o) => o.value === saved))
+      select.add(
+        new Option("Saved device unavailable — choose another", saved),
+      );
+    select.value = saved;
+  }
+  renderMedia();
+}
+$("refresh-devices").addEventListener("click", () => action(refreshDevices));
+$("device-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  action(async () => {
+    apply(
+      await api("/api/devices", {
+        input: $("audio-input").value,
+        output: $("audio-output").value,
+        camera: $("camera-device").value,
+        spoken_replies: $("spoken-replies").checked,
+      }),
+    );
+    notice("Devices saved. Capture is off until you enable it.", "success");
+  });
+});
+for (const [id, operation] of [
+  ["record", "record"],
+  ["send-recording", "send_recording"],
+  ["mute", "mute"],
+  ["read-reply", "read_reply"],
+  ["camera-on", "camera_on"],
+  ["camera-off", "camera_off"],
+])
+  $(id).addEventListener("click", () =>
+    action(async () => {
+      apply(await api("/api/media", { action: operation }));
+    }),
+  );
+$("stop-all").addEventListener("click", () =>
+  action(async () => {
+    apply(await api("/api/stop", {}));
+  }),
+);
+$("ask-view").addEventListener("click", () =>
+  action(async () => {
+    await api("/api/chat", {
+      text: "Describe what you can see in this camera image.",
+      vision: true,
+    });
+    apply(await api("/api/state"));
+    page("presence");
+  }),
+);
+$("desktop-action-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  action(async () =>
+    apply(
+      await api("/api/desktop-actions", {
+        enabled: $("allow-workspace-open").checked,
+      }),
+    ),
+  );
+});
+for (const [id, approve] of [
+  ["approve-action", true],
+  ["deny-action", false],
+])
+  $(id).addEventListener("click", () =>
+    action(async () =>
+      apply(
+        await api("/api/approval", { id: state.pending_action?.id, approve }),
+      ),
+    ),
+  );
 async function initialize() {
   const fragment = new URLSearchParams(location.hash.slice(1)),
     entry = fragment.get("entry");
@@ -486,6 +681,7 @@ async function initialize() {
     authorized = true;
     apply(data);
     await refreshModels();
+    await refreshDevices();
     apply(data, true);
     $("access-note").hidden = true;
   } catch (error) {
@@ -523,6 +719,7 @@ $("appearance-form").addEventListener("submit", (event) => {
         quality: $("render-quality").value,
         fps: Number($("render-fps").value),
         motion: $("render-motion").value,
+        idle_saver: $("idle-saver").checked,
       }),
     );
     notice("Appearance applied.", "success");

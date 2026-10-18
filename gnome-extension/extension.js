@@ -20,6 +20,9 @@ const STATES = {
   failed: 6,
   cancelled: 7,
   switching: 8,
+  listening: 9,
+  speaking: 10,
+  approval: 11,
 };
 const AVATARS = { ethereal: 0, sentinel: 1, mascot: 2, abstract: 3 };
 const LABELS = [
@@ -32,39 +35,75 @@ const LABELS = [
   "Needs attention",
   "Stopped",
   "Switching",
+  "Listening",
+  "Speaking",
+  "Waiting for approval",
 ];
 const DEFAULTS = {
   avatar: "ethereal",
   quality: "balanced",
   fps: 30,
   motion: "system",
+  idle_saver: true,
 };
-const PresenceEffect = GObject.registerClass(
-  class PresenceEffect extends Shell.GLSLEffect {
-    vfunc_build_pipeline() {
-      this.add_glsl_snippet(
+const PresenceContent = GObject.registerClass(
+  { Implements: [Clutter.Content] },
+  class PresenceContent extends GObject.Object {
+    _init() {
+      super._init();
+      this.pipeline = Cogl.Pipeline.new(
+        global.stage.context.get_backend().get_cogl_context(),
+      );
+      this.pipeline.set_layer_null_texture(0);
+      const snippet = Cogl.Snippet.new(
         Cogl.SnippetHook.FRAGMENT,
         "uniform float u_time,u_aspect,u_state,u_avatar,u_quality;\n" + source,
-        "cogl_color_out=vec4(avalon(vec2(cogl_tex_coord_in[0].x,1.0-cogl_tex_coord_in[0].y),u_aspect,u_time,u_state,u_avatar,u_quality),1.0);",
-        true,
+        "",
       );
+      snippet.set_replace(
+        "cogl_color_out=vec4(avalon(vec2(cogl_tex_coord_in[0].x,1.0-cogl_tex_coord_in[0].y),u_aspect,u_time,u_state,u_avatar,u_quality),1.0);",
+      );
+      this.pipeline.add_snippet(snippet);
     }
-    update(time, aspect, state, appearance) {
+    vfunc_paint_content(actor, node, _context) {
+      const child = Clutter.PipelineNode.new(this.pipeline);
+      child.add_rectangle(actor.get_content_box());
+      node.add_child(child);
+    }
+    queue_repaint() {
+      this.invalidate();
+    }
+    _uniform(key, value) {
+      if (this._values[key] === value) return;
+      this._locations[key] ??= this.pipeline.get_uniform_location("u_" + key);
+      this.pipeline.set_uniform_1f(this._locations[key], value);
+      this._values[key] = value;
+    }
+    update(time, aspect, state, appearance, sensors) {
       this._locations ??= {};
       this._values ??= {};
-      const values = {
-        time,
-        aspect,
-        state,
-        avatar: AVATARS[appearance.avatar],
-        quality: ["economy", "balanced", "high"].indexOf(appearance.quality),
-      };
-      for (const [key, value] of Object.entries(values)) {
-        if (this._values[key] === value) continue;
-        this._locations[key] ??= this.get_uniform_location("u_" + key);
-        this.set_uniform_float(this._locations[key], 1, [value]);
-        this._values[key] = value;
-      }
+      this._uniform("time", time);
+      if (
+        this._lastAspect === aspect &&
+        this._lastState === state &&
+        this._lastAppearance === appearance &&
+        this._lastSensors === sensors
+      )
+        return;
+      this._uniform("aspect", aspect);
+      this._uniform("state", state);
+      this._uniform("gaze_x", sensors.gaze[0]);
+      this._uniform("gaze_y", sensors.gaze[1]);
+      this._uniform("level", sensors.level);
+      this._uniform("avatar", AVATARS[appearance.avatar]);
+      this._uniform(
+        "quality",
+        ["economy", "balanced", "high"].indexOf(appearance.quality),
+      );
+      this._lastAspect = aspect;
+      this._lastState = state;
+      this._lastAppearance = appearance;
+      this._lastSensors = sensors;
     }
   },
 );
@@ -76,6 +115,7 @@ export default class Avalon extends Extension {
     this._activity = 0;
     this._appearance = { ...DEFAULTS };
     this._model = "";
+    this._sensors = { gaze: [0, 0], level: 0 };
     this._dirty = true;
     this._release = claimWallpaper(this.uuid, () => this.disable());
     try {
@@ -92,9 +132,12 @@ export default class Avalon extends Extension {
       this._accessibility = new Gio.Settings({
         schema_id: "org.gnome.desktop.interface",
       });
+      this._systemMotion = this._accessibility.get_boolean("enable-animations");
       this._motionId = this._accessibility.connect(
         "changed::enable-animations",
         () => {
+          this._systemMotion =
+            this._accessibility.get_boolean("enable-animations");
           this._dirty = true;
         },
       );
@@ -115,9 +158,14 @@ export default class Avalon extends Extension {
       throw error;
     }
   }
+  _frameLimit() {
+    return this._appearance.idle_saver && this._activity <= 1
+      ? Math.min(15, this._appearance.fps)
+      : this._appearance.fps;
+  }
   _setFrameTimer() {
     if (this._tick) GLib.Source.remove(this._tick);
-    this._timerFps = this._appearance.fps;
+    this._timerFps = this._frameLimit();
     this._tick = GLib.timeout_add(
       GLib.PRIORITY_LOW,
       Math.round(1000 / this._timerFps),
@@ -130,7 +178,8 @@ export default class Avalon extends Extension {
   _readStatus() {
     let activity = 0,
       appearance = { ...DEFAULTS },
-      model = "";
+      model = "",
+      sensors = { gaze: [0, 0], level: 0 };
     try {
       const [ok, bytes] = GLib.file_get_contents(this._statePath);
       if (!ok || bytes.length > 4096) throw new Error("Invalid visual state");
@@ -142,6 +191,8 @@ export default class Avalon extends Extension {
       if (["economy", "balanced", "high"].includes(settings.quality))
         appearance.quality = settings.quality;
       if ([15, 30, 60].includes(settings.fps)) appearance.fps = settings.fps;
+      if (typeof settings.idle_saver === "boolean")
+        appearance.idle_saver = settings.idle_saver;
       if (["system", "full", "reduced"].includes(settings.motion))
         appearance.motion = settings.motion;
       if (
@@ -152,21 +203,40 @@ export default class Avalon extends Extension {
         activity = Number.isInteger(STATES[data.status])
           ? STATES[data.status]
           : 0;
+        const input = data.sensors;
+        if (
+          Array.isArray(input?.gaze) &&
+          input.gaze.length === 2 &&
+          input.gaze.every((x) => Number.isFinite(x) && Math.abs(x) <= 1) &&
+          Number.isFinite(input.level) &&
+          input.level >= 0 &&
+          input.level <= 1
+        )
+          sensors = { gaze: input.gaze, level: input.level };
         model = typeof data.model === "string" ? data.model.slice(0, 100) : "";
       }
     } catch {
       /* A missing or malformed status never stops the desktop. */
     }
     if (
+      JSON.stringify(sensors) !== JSON.stringify(this._sensors) ||
       activity !== this._activity ||
       JSON.stringify(appearance) !== JSON.stringify(this._appearance) ||
       model !== this._model
     ) {
+      const still =
+        appearance.motion === "reduced" ||
+        (appearance.motion === "system" && !this._systemMotion);
+      this._dirty ||=
+        activity !== this._activity ||
+        model !== this._model ||
+        JSON.stringify(appearance) !== JSON.stringify(this._appearance) ||
+        !still;
+      this._sensors = sensors;
       this._activity = activity;
       this._appearance = appearance;
       this._model = model;
-      this._dirty = true;
-      if (this._tick && this._timerFps !== appearance.fps)
+      if (this._tick && this._timerFps !== this._frameLimit())
         this._setFrameTimer();
       for (const area of this._areas) {
         area._status.text = LABELS[activity];
@@ -178,20 +248,21 @@ export default class Avalon extends Extension {
   }
   _render() {
     const visible = !Main.overview.visible && !Main.screenShield.locked;
-    for (const area of this._areas) area.visible = visible;
+    if (visible !== this._visible) {
+      for (const area of this._areas) area.visible = visible;
+      this._visible = visible;
+    }
     if (!visible) {
       this._dirty = true;
       return;
     }
     const still =
       this._appearance.motion === "reduced" ||
-      (this._appearance.motion === "system" &&
-        !this._accessibility.get_boolean("enable-animations"));
+      (this._appearance.motion === "system" && !this._systemMotion);
     const now = GLib.get_monotonic_time();
     if (
       (still && !this._dirty) ||
-      (!this._dirty &&
-        now - this._lastFrame < 1e6 / this._appearance.fps - 1000)
+      (!this._dirty && now - this._lastFrame < 1e6 / this._timerFps - 1000)
     )
       return;
     for (const area of this._areas) {
@@ -201,8 +272,9 @@ export default class Avalon extends Extension {
         area.width / area.height,
         this._activity,
         this._appearance,
+        still ? { gaze: [0, 0], level: 0 } : this._sensors,
       );
-      // Only the shader changed; reuse the cached offscreen source.
+      // Paint the procedural pipeline directly; no source/offscreen texture pass.
       effect.queue_repaint();
     }
     this._frames++;
@@ -226,8 +298,8 @@ export default class Avalon extends Extension {
         }),
       });
       canvas.set_size(monitor.width, monitor.height);
-      const effect = new PresenceEffect();
-      canvas.add_effect_with_name("presence", effect);
+      const effect = new PresenceContent();
+      canvas.set_content(effect);
       group.add_child(canvas);
       group._canvas = canvas;
       group._effect = effect;
@@ -275,6 +347,7 @@ export default class Avalon extends Extension {
       Main.layoutManager._backgroundGroup.add_child(group);
       this._areas.push(group);
     }
+    this._visible = undefined;
     this._dirty = true;
   }
   disable() {

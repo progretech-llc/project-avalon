@@ -30,7 +30,7 @@ Name: Project Avalon. The owner's supplied concept PNG sets the visual target. I
 
 ## Evidence on hand
 
-See docs/SPECIFICATION.md, docs/DELIVERY.md and docs/PHASE-1.md. Phase 3 delivers four original live GPU avatar forms and appearance controls. See docs/PHASE-3.md for visual review and measured resource evidence; native login-session updates still require logout/login.
+See docs/SPECIFICATION.md, docs/DELIVERY.md and docs/PHASE-1.md. Phase 3 delivers four original live GPU avatar forms and appearance controls. See docs/PHASE-3.md for visual review and measured resource evidence; native login-session updates still require logout/login. Phase 4 adds local speech, camera gaze, actual device selection and scoped Ubuntu approvals; physical capture/output qualification remains open while the owner is away. See docs/PHASE-4.md. The phase 3 CPU gate remains open.
 
 ## Product principles
 

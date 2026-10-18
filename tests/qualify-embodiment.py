@@ -92,7 +92,7 @@ for quality, index in [("economy", 0), ("balanced", 1), ("high", 2)]:
     wait(lambda: value("e._areas[0]._effect._values.quality") == index)
 frame_rates = {}
 for fps in (15, 30, 60):
-    write("idle", avatar="ethereal", quality="balanced", fps=fps, motion="full")
+    write("working", avatar="ethereal", quality="balanced", fps=fps, motion="full")
     wait(lambda: value("e._timerFps") == fps)
     start = time.monotonic()
     frames = value("e._frames")

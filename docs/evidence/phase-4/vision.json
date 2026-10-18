@@ -1,0 +1,6 @@
+{
+  "method": "Actual Controller \u2192 pinned LampOS gateway \u2192 OpenCode \u2192 selected Ollama vision model, using original avatar PNG as an explicitly authored fixture. No camera frame or secondary VLM. Production runtime stopped before qualification and restarted afterwards.",
+  "model": "qwen3.5:4b",
+  "reply": "The image features a cute teal robot character with circular gold ears and glowing yellow eyes against a starry space background.",
+  "status": "complete"
+}

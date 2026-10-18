@@ -2,21 +2,21 @@
 
 import atexit
 import fcntl
-from functools import wraps
 import hmac
 import json
 import os
-from pathlib import Path
 import secrets
 import signal
 import subprocess
 import threading
 import time
-from urllib.parse import urlparse
+from functools import wraps
+from pathlib import Path
 
-from flask import Flask, jsonify, request, session, render_template, send_from_directory
+from flask import Flask, jsonify, render_template, request, send_from_directory, session
 from waitress import serve
-from control import Catalog, Conflict, Controller, Unavailable
+
+from control import Conflict, Controller, Unavailable
 from runtime_config import atomic_json
 
 ROOT = Path(__file__).resolve().parent
@@ -67,8 +67,11 @@ def create_app(controller=None, test_config=None):
                     timeout=3,
                     env={**os.environ, "LC_ALL": "C"},
                 )
-                if "State: ACTIVE" in result.stdout:
-                    value = {"mode": name}
+                if "Enabled: Yes" in result.stdout:
+                    value = {
+                        "mode": name,
+                        "rendering": "State: ACTIVE" in result.stdout,
+                    }
             wallpaper_cache.update(at=time.monotonic(), value=value)
             return value
 
@@ -169,7 +172,79 @@ def create_app(controller=None, test_config=None):
         data = request.get_json()
         if not isinstance(data, dict):
             raise ValueError("Expected an object")
-        return jsonify(turn=control.chat(data.get("text"))), 202
+        if type(data.get("vision", False)) is not bool:
+            raise ValueError("Choose whether to attach the current camera view")
+        return jsonify(
+            turn=control.chat(data.get("text"), vision=data.get("vision", False))
+        ), 202
+
+    @app.get("/api/devices")
+    @private
+    def list_devices():
+        from media import devices
+
+        try:
+            return jsonify(devices())
+        except (OSError, subprocess.SubprocessError, ValueError):
+            raise Unavailable(
+                "PipeWire devices could not be read. Check the audio service and refresh."
+            )
+
+    @app.post("/api/devices")
+    @private
+    def device_settings():
+        if not control.media:
+            raise Unavailable("Media support is unavailable")
+        with control.lock:
+            control.media.configure(request.get_json())
+            return jsonify(control.snapshot())
+
+    @app.post("/api/media")
+    @private
+    def media_action():
+        if not control.media:
+            raise Unavailable("Media support is unavailable")
+        data = request.get_json()
+        operation = data.get("action") if isinstance(data, dict) else None
+        with control.lock:
+            if operation == "record":
+                control.media.record()
+            elif operation == "send_recording":
+                control.media.finish()
+            elif operation == "mute":
+                control.media.stop_audio()
+            elif operation == "camera_on":
+                control.media.enable_camera()
+            elif operation == "camera_off":
+                control.media.stop_camera()
+            elif operation == "read_reply":
+                messages = control.store.messages(control.selected)
+                replies = [
+                    m
+                    for m in messages
+                    if m["role"] == "assistant" and m["status"] == "complete"
+                ]
+                if not replies or control.active:
+                    raise ValueError("Finish a reply before reading it aloud")
+                control.media.speak(replies[-1]["text"])
+            else:
+                raise ValueError("Unknown media action")
+            return jsonify(control.snapshot())
+
+    @app.post("/api/desktop-actions")
+    @private
+    def desktop_actions():
+        data = request.get_json()
+        return jsonify(
+            control.set_desktop_actions(
+                data.get("enabled") if isinstance(data, dict) else None
+            )
+        )
+
+    @app.post("/api/approval")
+    @private
+    def approval():
+        return jsonify(control.decide_action(request.get_json()))
 
     @app.post("/api/stop")
     @private
@@ -278,6 +353,9 @@ def main():
     lock = (state / "controller.lock").open("a")
     fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
     controller = Controller(state)
+    from media import Media
+
+    controller.media = Media(controller)
 
     def start_selected():
         try:

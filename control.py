@@ -1,10 +1,8 @@
 """One selected LampOS session, with native permissions and fenced events."""
 
-from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
 import json
 import os
-from pathlib import Path
+import re
 import secrets
 import shutil
 import sqlite3
@@ -13,8 +11,12 @@ import threading
 import time
 import urllib.request
 import uuid
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from pathlib import Path
 
 from websockets.sync.client import connect
+
 from runtime_config import atomic_json, configure
 
 ROOT = Path(__file__).resolve().parent
@@ -377,6 +379,9 @@ class Controller:
         self.visual = (
             Path(visual) if visual else self.state / "desktop/visual-state.json"
         )
+        self.media = None
+        self.pending_action = None
+        self.desktop_actions = self.store.get("desktop_actions", False)
         self.generation = 0
         self.revision = 0
         self.active = None
@@ -384,15 +389,18 @@ class Controller:
         self.status = "disconnected"
         self.detail = "Connect a local model to begin."
         self.selected = self.store.get("active_session")
-        self.appearance = self.store.get(
-            "appearance",
-            {
-                "avatar": "ethereal",
-                "quality": "balanced",
-                "fps": 30,
-                "motion": "system",
-            },
-        )
+        self.appearance = {
+            "idle_saver": True,
+            **self.store.get(
+                "appearance",
+                {
+                    "avatar": "ethereal",
+                    "quality": "balanced",
+                    "fps": 30,
+                    "motion": "system",
+                },
+            ),
+        }
         self.closing = threading.Event()
         self.store.event(
             "startup", "Control center started; no previous task was replayed"
@@ -414,7 +422,8 @@ class Controller:
             self.visual,
             {
                 "schema": 1,
-                "status": self.status,
+                "status": self.visible_status(),
+                "sensors": self.visual_sensors(),
                 "platform": "opencode",
                 "model": current["model"] if current else "",
                 "session": self.selected,
@@ -423,6 +432,24 @@ class Controller:
                 "appearance": self.appearance,
             },
         )
+
+    def visual_sensors(self):
+        if not self.media:
+            return {"gaze": [0.0, 0.0], "level": 0.0}
+        return {
+            "gaze": list(self.media.state["gaze"]),
+            "level": self.media.state["level"],
+        }
+
+    def visible_status(self):
+        if self.pending_action and time.time() < self.pending_action["expires"]:
+            return "approval"
+        if self.media:
+            if self.media.state["recording"]:
+                return "listening"
+            if self.media.state["speaking"]:
+                return "speaking"
+        return self.status
 
     def set_status(self, status, detail, event=True):
         self.status = status
@@ -436,8 +463,19 @@ class Controller:
             response = {
                 "revision": self.revision,
                 "appearance": dict(self.appearance),
-                "status": self.status,
-                "detail": self.detail,
+                "status": self.visible_status(),
+                "runtime_status": self.status,
+                "sensors": self.visual_sensors(),
+                "devices": self.media.snapshot() if self.media else None,
+                "desktop_actions": self.desktop_actions,
+                "pending_action": self.pending_action
+                if self.pending_action and time.time() < self.pending_action["expires"]
+                else None,
+                "detail": {
+                    "listening": "Microphone capture is active",
+                    "speaking": "Playing a local voice response",
+                    "approval": "A workspace action needs your decision",
+                }.get(self.visible_status(), self.detail),
                 "active_turn": self.active["id"] if self.active else None,
                 "generation": self.generation,
                 "session": self.store.session(self.selected) if self.selected else None,
@@ -460,6 +498,7 @@ class Controller:
             "quality",
             "fps",
             "motion",
+            "idle_saver",
         }:
             raise ValueError("Unknown appearance setting")
         with self.lock:
@@ -481,6 +520,8 @@ class Controller:
                 raise ValueError("Choose 15, 30 or 60 FPS")
             if candidate["motion"] not in ("system", "full", "reduced"):
                 raise ValueError("Choose a valid motion preference")
+            if type(candidate["idle_saver"]) is not bool:
+                raise ValueError("Choose whether idle power saving is enabled")
             self.appearance = candidate
             self.store.set("appearance", candidate)
             self.publish()
@@ -495,6 +536,9 @@ class Controller:
     def _stop(self, label):
         # Fence events before closing the old connection or stopping its process.
         self.generation += 1
+        self.pending_action = None
+        if self.media:
+            self.media.stop()
         if self.active:
             job = self.active
             self.store.replace_message(job["message_id"], job["text"], "cancelled")
@@ -532,7 +576,7 @@ class Controller:
             raise ValueError("Choose a valid permission policy")
         if commands and mode == "chat":
             raise ValueError("Enable workspace access before allowing status commands")
-        self.catalog.validate(model, mode)
+        capabilities = self.catalog.validate(model, mode)
         if existing:
             workspace = Path(existing["workspace"])
         elif data.get("workspace"):
@@ -564,7 +608,14 @@ class Controller:
                     existing = self.store.session(identifier)
                 else:
                     self.store.update_session(identifier, title.strip(), mode, commands)
-                configure(self.state / "agent", model, workspace, mode, commands)
+                configure(
+                    self.state / "agent",
+                    model,
+                    workspace,
+                    mode,
+                    commands,
+                    vision=bool(capabilities.get("vision")),
+                )
                 self.runtime.restore(existing["native"])
                 self.selected = identifier
                 self.store.set("active_session", identifier)
@@ -585,7 +636,7 @@ class Controller:
             else self.select({})
         )
 
-    def chat(self, text):
+    def chat(self, text, spoken=False, vision=False):
         if not isinstance(text, str) or not text.strip() or len(text) > 16000:
             raise ValueError("Message must contain 1–16,000 characters")
         with self.lock:
@@ -595,6 +646,22 @@ class Controller:
                 )
             if not self.ws or not self.selected:
                 raise Conflict("Connect a local model before sending a message")
+            if (
+                self.media
+                and (self.media.state["recording"] or self.media.state["transcribing"])
+                and not spoken
+            ):
+                raise Conflict(
+                    "Send or discard the microphone recording before chatting"
+                )
+            attachments = (
+                self.media.vision_attachment() if vision and self.media else []
+            )
+            if vision and not self.media:
+                raise ValueError("Camera support is unavailable")
+            if self.media:
+                self.media.stop_audio()
+            self.pending_action = None
             self.store.message(self.selected, "user", text.strip())
             message_id = self.store.message(self.selected, "assistant", "", "streaming")
             self.generation += 1
@@ -606,6 +673,7 @@ class Controller:
                 "message_id": message_id,
                 "text": "",
                 "session": self.selected,
+                "spoken": spoken,
             }
             self.active = job
             self.set_status("working", "OpenCode is working on your message")
@@ -616,7 +684,15 @@ class Controller:
                             "type": "message.send",
                             "id": identifier,
                             "run_id": identifier,
-                            "payload": {"content": text.strip()},
+                            "payload": {
+                                "content": text.strip()
+                                + (
+                                    "\n\nAvalon desktop action protocol: if the user asks you to open this conversation workspace folder, propose it by writing exactly [[avalon:open_workspace]] on a line by itself. This only requests user approval; do not use shell tools to open anything. No other desktop actions are supported."
+                                    if self.desktop_actions
+                                    else ""
+                                ),
+                                "attachments": attachments,
+                            },
                         }
                     )
                 )
@@ -685,12 +761,51 @@ class Controller:
                                 "working", "OpenCode tool " + name + ": " + tool_status
                             )
                     elif kind == "session.idle":
+                        marker = r"(?m)^\[\[avalon:open_workspace\]\]$"
+                        proposal = self.desktop_actions and re.search(
+                            marker, job["text"]
+                        )
+                        display_text = (
+                            re.sub(
+                                marker,
+                                "Requested to open this workspace in Ubuntu Files. Your approval is required.",
+                                job["text"],
+                            )
+                            if proposal
+                            else job["text"]
+                        )
                         self.store.replace_message(
-                            job["message_id"], job["text"], "complete"
+                            job["message_id"], display_text, "complete"
                         )
                         self._save_current()
                         self.active = None
+                        if proposal:
+                            current = self.store.session(self.selected)
+                            self.pending_action = {
+                                "id": secrets.token_urlsafe(24),
+                                "kind": "open_workspace",
+                                "session": self.selected,
+                                "generation": self.generation,
+                                "turn": job["id"],
+                                "path": str(Path(current["workspace"]).resolve()),
+                                "expires": time.time() + 60,
+                            }
+                            self.store.event(
+                                "approval",
+                                "Open workspace requested; waiting for your approval",
+                            )
                         self.set_status("completed", "Response completed")
+                        if (
+                            job.get("spoken")
+                            and self.media
+                            and self.media.settings["spoken_replies"]
+                            and not self.pending_action
+                        ):
+                            try:
+                                self.media.speak(job["text"])
+                            except ValueError as exc:
+                                self.media.state["notice"] = str(exc)
+                                self.publish()
                         timer = threading.Timer(
                             2, self._settle, args=(job["generation"],)
                         )
@@ -723,6 +838,72 @@ class Controller:
                 and self.status == "completed"
             ):
                 self.set_status("idle", "Ready for your next message", event=False)
+
+    def set_desktop_actions(self, enabled):
+        if type(enabled) is not bool:
+            raise ValueError("Choose whether workspace opening is allowed")
+        with self.lock:
+            self.pending_action = None
+            self.desktop_actions = enabled
+            self.store.set("desktop_actions", enabled)
+            self.store.event(
+                "permissions",
+                "Workspace opening "
+                + (
+                    "enabled; every action requires approval" if enabled else "disabled"
+                ),
+            )
+            self.publish()
+            return self.snapshot()
+
+    def decide_action(self, data):
+        if not isinstance(data, dict) or type(data.get("approve")) is not bool:
+            raise ValueError("Approve or deny the exact requested action")
+        with self.lock:
+            action = self.pending_action
+            if not action or data.get("id") != action["id"]:
+                raise Conflict("This approval is no longer available")
+            self.pending_action = None
+            if not data["approve"]:
+                self.store.event("denied", "Workspace opening denied by the user")
+            else:
+                if (
+                    not self.desktop_actions
+                    or action["expires"] < time.time()
+                    or action["session"] != self.selected
+                    or action["generation"] != self.generation
+                    or self.active
+                ):
+                    self.publish()
+                    raise Conflict(
+                        "This approval expired or belongs to an earlier turn"
+                    )
+                from media import screen_locked
+
+                if screen_locked():
+                    self.publish()
+                    raise Conflict("Unlock Ubuntu and request the action again")
+                current = self.store.session(self.selected)
+                path = Path(current["workspace"]).resolve()
+                if (
+                    action["kind"] != "open_workspace"
+                    or str(path) != action["path"]
+                    or not path.is_dir()
+                ):
+                    self.publish()
+                    raise Conflict("The workspace changed; request the action again")
+                subprocess.Popen(
+                    ["xdg-open", str(path)],
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                )
+                self.store.event(
+                    "executing", "Approved workspace opening dispatched to Ubuntu Files"
+                )
+            self.publish()
+            return self.snapshot()
 
     def cancel(self):
         with self.lock:

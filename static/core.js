@@ -10,6 +10,9 @@ const states = {
   failed: 6,
   cancelled: 7,
   switching: 8,
+  listening: 9,
+  speaking: 10,
+  approval: 11,
 };
 const avatars = { ethereal: 0, sentinel: 1, mascot: 2, abstract: 3 };
 let sharedSource;
@@ -30,8 +33,10 @@ export function mountCore(canvas) {
       quality: "balanced",
       fps: 30,
       motion: "system",
+      idle_saver: true,
     },
-    frames = 0;
+    frames = 0,
+    sensors = { gaze: [0, 0], level: 0 };
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const observer = new IntersectionObserver((entries) => {
     visible = entries[0]?.isIntersecting;
@@ -76,10 +81,16 @@ export function mountCore(canvas) {
     gl.enableVertexAttribArray(p);
     gl.vertexAttribPointer(p, 2, gl.FLOAT, false, 0, 0);
     locations = Object.fromEntries(
-      ["time", "aspect", "state", "avatar", "quality"].map((k) => [
-        k,
-        gl.getUniformLocation(program, "u_" + k),
-      ]),
+      [
+        "time",
+        "aspect",
+        "state",
+        "avatar",
+        "quality",
+        "gaze_x",
+        "gaze_y",
+        "level",
+      ].map((k) => [k, gl.getUniformLocation(program, "u_" + k)]),
     );
     dirty = true;
     delete canvas.dataset.error;
@@ -103,8 +114,11 @@ export function mountCore(canvas) {
       gl.viewport(0, 0, w, h);
       dirty = true;
     }
-    if ((still && !dirty) || (!dirty && now - last < 1000 / appearance.fps - 1))
-      return;
+    const fps =
+      appearance.idle_saver && status <= 1
+        ? Math.min(15, appearance.fps)
+        : appearance.fps;
+    if ((still && !dirty) || (!dirty && now - last < 1000 / fps - 1)) return;
     gl.uniform1f(locations.time, still ? 0 : now / 1000);
     gl.uniform1f(locations.aspect, w / h);
     gl.uniform1f(locations.state, status);
@@ -113,6 +127,9 @@ export function mountCore(canvas) {
       locations.quality,
       ["economy", "balanced", "high"].indexOf(appearance.quality),
     );
+    gl.uniform1f(locations.gaze_x, still ? 0 : sensors.gaze[0]);
+    gl.uniform1f(locations.gaze_y, still ? 0 : sensors.gaze[1]);
+    gl.uniform1f(locations.level, still ? 0 : sensors.level);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
     last = now;
     dirty = false;
@@ -131,7 +148,7 @@ export function mountCore(canvas) {
       new CustomEvent("avatar-error", { detail: error.message }),
     );
   }
-  sharedSource ??= fetch("/static/presence.glsl?v=3").then((r) => {
+  sharedSource ??= fetch("/static/presence.glsl?v=4.2").then((r) => {
     if (!r.ok) throw Error("Avatar shader is unavailable");
     return r.text();
   });
@@ -148,7 +165,15 @@ export function mountCore(canvas) {
   canvas.addEventListener("webglcontextrestored", () =>
     sharedSource.then(initialize).catch(failed),
   );
-  return (value, settings) => {
+  return (value, settings, input) => {
+    if (input && JSON.stringify(input) !== JSON.stringify(sensors)) {
+      sensors = input;
+      if (!(
+        appearance.motion === "reduced" ||
+        (appearance.motion === "system" && reduced.matches)
+      ))
+        dirty = true;
+    }
     const next = states[value] ?? 0;
     if (next !== status) {
       status = next;

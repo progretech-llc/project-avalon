@@ -1,12 +1,12 @@
-import json
 import os
-from pathlib import Path
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
-from app import create_app, credentials
 from test_control import FakeCatalog
+
+from app import create_app, credentials
 
 HOST = "127.0.0.1:8766"
 ORIGIN = "http://" + HOST
@@ -32,7 +32,7 @@ class FakeController:
         self.mutations += 1
         return {"appearance": data}
 
-    def chat(self, text):
+    def chat(self, text, vision=False):
         self.mutations += 1
         return "turn"
 
@@ -123,6 +123,21 @@ class WebTest(unittest.TestCase):
         )
         self.assertEqual(r.status_code, 200)
         self.assertEqual(self.controller.mutations, 1)
+
+    def test_media_and_desktop_apis_require_auth_origin_and_csrf(self):
+        paths = ("/api/devices", "/api/media", "/api/desktop-actions", "/api/approval")
+        for path in paths:
+            r = self.client.post(
+                path, base_url=ORIGIN, json={}, headers={"Origin": ORIGIN}
+            )
+            self.assertEqual(r.status_code, 401, path)
+        self.auth()
+        for path in paths:
+            r = self.client.post(
+                path, base_url=ORIGIN, json={}, headers={"Origin": ORIGIN}
+            )
+            self.assertEqual(r.status_code, 403, path)
+        self.assertEqual(self.controller.mutations, 0)
 
     def test_private_responses_are_not_cached(self):
         self.auth()
