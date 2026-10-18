@@ -24,3 +24,5 @@ The native renderer preserves folder/memory interactions, hover labels, focus, a
 The independent Your Avalon galaxy form reuses Devices’ native labeled fields, checkbox rows, selects and save action. It controls pause, custom foreground, galaxy rotation, glow, rays, dust density, links, labels, agent motion, solar rotation/speed/direction, write lights and shared-worker name. Avatar-card selection and the surrounding application palette/type remain unchanged. Shader detail settings describe the four shader avatars; the reused galaxy has its own rendering path.
 
 Evidence: constellation.py, static/constellation-core.js, static/galaxy.js, static/app.js, templates/index.html, gnome-extension/constellation-presence.js and gnome-extension/constellation-wallpaper.js. The scoped reuse preserves renderer provenance; no new concept roll or historical seed is claimed.
+
+The galaxy reuses the native left-side Avalon/status overlay with the existing typography and monitor visibility rules. Galaxy motion never carries the overlay with it. Sleeping reflects idle capture sleep; active task/listening/speech states keep their live labels.

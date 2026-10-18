@@ -1,0 +1,60 @@
+{
+  "Sleeping": {
+    "label": "Sleeping",
+    "galaxy": true,
+    "overlayVisible": true,
+    "canvasVisible": false,
+    "aboveGalaxy": true
+  },
+  "Ready": {
+    "label": "Ready",
+    "galaxy": true,
+    "overlayVisible": true,
+    "canvasVisible": false,
+    "aboveGalaxy": true
+  },
+  "Listening": {
+    "label": "Listening",
+    "galaxy": true,
+    "overlayVisible": true,
+    "canvasVisible": false,
+    "aboveGalaxy": true
+  },
+  "Working": {
+    "label": "Working",
+    "galaxy": true,
+    "overlayVisible": true,
+    "canvasVisible": false,
+    "aboveGalaxy": true
+  },
+  "Speaking": {
+    "label": "Speaking",
+    "galaxy": true,
+    "overlayVisible": true,
+    "canvasVisible": false,
+    "aboveGalaxy": true
+  },
+  "monitor_rebuild": {
+    "label": "Ready",
+    "galaxy": true,
+    "overlayVisible": true,
+    "canvasVisible": false,
+    "aboveGalaxy": true
+  },
+  "avatar_switch": {
+    "label": "Sleeping",
+    "galaxy": false,
+    "overlayVisible": true,
+    "canvasVisible": true,
+    "aboveGalaxy": true
+  },
+  "return_to_galaxy": {
+    "label": "Sleeping",
+    "galaxy": true,
+    "overlayVisible": true,
+    "canvasVisible": false,
+    "aboveGalaxy": true
+  },
+  "exclusive_cleanup": true,
+  "input": "Synthetic visual-state fixture in isolated GNOME; no physical capture enabled"
+}

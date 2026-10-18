@@ -244,12 +244,15 @@ export default class Avalon extends Extension {
       if (this._tick && this._timerFps !== this._frameLimit())
         this._setFrameTimer();
       for (const area of this._areas) {
-        area._status.text = LABELS[activity];
         area._model.text = model
           ? "OpenCode / " + model
           : "Open Project Avalon to connect";
       }
     }
+    for (const area of this._areas) area._status.text = this._statusLabel();
+  }
+  _statusLabel() {
+    return this._activity === 1 && !this._awake ? "Sleeping" : LABELS[this._activity];
   }
   _render() {
     const visible = !Main.overview.visible && !Main.screenShield.locked;
@@ -264,10 +267,27 @@ export default class Avalon extends Extension {
     if (this._appearance.avatar === "constellation") {
       if (!this._galaxy) this._galaxy = createConstellation(this);
       this._galaxy._presence();
-      for (const area of this._areas) area.visible = false;
+      // Keep the shared status overlay above the galaxy, hiding only its avatar.
+      if (this._hudGalaxyAreas !== this._galaxy._areas) {
+        for (const area of this._areas)
+          area.get_parent().set_child_above_sibling(area, null);
+        this._hudGalaxyAreas = this._galaxy._areas;
+      }
+      for (const area of this._areas) {
+        area.visible = visible;
+        area._canvas.visible = false;
+      }
       return;
     }
-    if (this._galaxy) { this._galaxy.disable(); this._galaxy = null; for (const area of this._areas) area.visible = visible; }
+    if (this._galaxy) {
+      this._galaxy.disable();
+      this._galaxy = null;
+      this._hudGalaxyAreas = null;
+      for (const area of this._areas) {
+        area.visible = visible;
+        area._canvas.visible = true;
+      }
+    }
     const still =
       this._appearance.motion === "reduced" ||
       (this._appearance.motion === "system" && !this._systemMotion);
@@ -356,7 +376,7 @@ export default class Avalon extends Extension {
         }),
       );
       const status = new St.Label({
-        text: LABELS[this._activity],
+        text: this._statusLabel(),
         style: "padding-top: 28px; font-size: 20px; color: #79dce8;",
       });
       const model = new St.Label({
@@ -376,6 +396,7 @@ export default class Avalon extends Extension {
       Main.layoutManager._backgroundGroup.add_child(group);
       this._areas.push(group);
     }
+    this._hudGalaxyAreas = null;
     this._visible = undefined;
     this._dirty = true;
   }
@@ -394,6 +415,7 @@ export default class Avalon extends Extension {
   disable() {
     this._galaxy?.disable();
     this._galaxy = null;
+    this._hudGalaxyAreas = null;
     if (this._wakeButton) {
       Main.layoutManager.removeChrome(this._wakeButton);
       this._wakeButton.destroy();
