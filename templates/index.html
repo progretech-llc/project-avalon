@@ -7,8 +7,8 @@
     <title>Project Avalon</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/static/icons/avalon-192.png" />
-    <link rel="stylesheet" href="/static/app.css?v=4.2" />
-    <script src="/static/app.js?v=4.2" type="module"></script>
+    <link rel="stylesheet" href="/static/app.css?v=4.4" />
+    <script src="/static/app.js?v=4.4" type="module"></script>
   </head>
   <body data-status="disconnected">
     <svg class="icon-defs" aria-hidden="true">
@@ -344,6 +344,7 @@
             Microphone off · Camera off
           </div>
           <div class="device-live">
+            <button id="wake-presence" class="primary" type="button">Wake up</button>
             <meter
               id="audio-level"
               min="0"
@@ -356,6 +357,9 @@
           <form id="device-form" class="device-form">
             <section>
               <h3>Voice</h3>
+              <label for="listener-phrase">Listener phrase</label>
+              <input id="listener-phrase" type="text" maxlength="80" value="hey progre" required />
+              <p class="field-note">Wake up enables the microphone, speakers and camera together. Say your phrase, then a command. Progre listens for a follow-up for ten seconds after replying. Go to sleep releases all three devices.</p>
               <label for="audio-input">Microphone</label
               ><select id="audio-input">
                 <option value="default">Follow Ubuntu default input</option>
@@ -387,8 +391,9 @@
               </select>
               <p class="field-note">
                 Local face positions guide the avatar’s gaze. Camera images stay
-                in one private, replaceable frame until you explicitly ask your
-                selected model about the view. Sending a view also adds that
+                in one private, replaceable frame. Each spoken command while the
+                camera is enabled includes one fresh image for your selected vision
+                model. Sending a view also adds that
                 image to the agent’s local conversation history.
               </p>
               <p id="vision-capability" class="field-note">

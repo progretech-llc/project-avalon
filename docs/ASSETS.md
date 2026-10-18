@@ -30,3 +30,11 @@ The native and UI PNGs under `docs/evidence/phase-3` are qualification screensho
 - Tracking: OpenCV 5.0.0.93 and its bundled frontal-face Haar cascade, Apache-2.0 distribution; native LampOS capture and deterministic damped positions, no additional VLM.
 - Device routing: native `pw-dump`, `pw-record`, `pw-play`; [PipeWire node routing properties](https://pipewire.pages.freedesktop.org/pipewire/page_man_pipewire-props_7.html) and installed WirePlumber `linking/find-defined-target.lua` inspected for explicit-target no-fallback behavior.
 - Original phase 3 avatar PNG reused only as an explicitly authored semantic-vision test fixture. Phase 4 ships no new third-party visual raster. No physical camera frame or microphone recording enters source/evidence. Synthetic PCM is kept only in ignored private runtime storage during tests.
+
+## Progre owner reference, October 18 refinement
+
+`reference/progre-owner-reference.png` is a scoped copy of the latest artwork supplied by the owner in this session (`codex-clipboard-9giiSg.png`); the original clipboard file remains intact. Progre has no torso: the lateral spheres are eyes, the white slashes are nose and the enclosed zigzag is mouth, with tiny hands/feet directly attached.
+
+`static/art/progre.png` and identical `gnome-extension/progre.png` are a transparent background extraction prepared with the built-in Imagegen tool from that reference. The selected generated source is preserved at `/home/progretech/.codex/generated_images/01a1502f-f4e5-70b3-84e6-d0fca69ca723/exec-f9cba0db-e3e3-4a85-b8b0-736bdf77e66a.png`. Runtime display uses bounded shared GPU texture animation; this is a reference-derived 2.5D asset, not an original 3D reconstruction. Generated previews in `static/avatars` are captures of the actual shared renderer. Background star dots were removed from all variants.
+
+OpenCV is pinned to `opencv-python-headless==4.13.0.92` because the previously installed 5.0 wheel lacked `CascadeClassifier`; real camera capture and face-driver initialization were rechecked. [Upstream package documentation](https://pypi.org/project/opencv-python-headless/) documents the Haar cascade interface.

@@ -88,10 +88,10 @@ class Catalog:
             return list(self.items)
 
     def choose(self):
-        models = [m for m in self.models() if m["tools"]]
+        models = [m for m in self.models() if m["tools"] and m.get("vision")]
         if not models:
             raise Unavailable(
-                "No installed tool-capable local model is available. No model was downloaded."
+                "No installed vision-and-tool-capable local model is available. Install one or explicitly select a text model for conversation without camera questions. No model was downloaded."
             )
         memory = next(
             (
@@ -109,8 +109,8 @@ class Catalog:
         return min(
             fitting,
             key=lambda m: (
-                "coder" not in m["name"],
                 m["name"].startswith("experiment-"),
+                m["name"] != "qwen3.5:4b",
                 m["size"],
             ),
         )["name"]
@@ -424,6 +424,7 @@ class Controller:
                 "schema": 1,
                 "status": self.visible_status(),
                 "sensors": self.visual_sensors(),
+                "awake": bool(self.media and getattr(self.media, "awake", False)),
                 "platform": "opencode",
                 "model": current["model"] if current else "",
                 "session": self.selected,
@@ -445,10 +446,12 @@ class Controller:
         if self.pending_action and time.time() < self.pending_action["expires"]:
             return "approval"
         if self.media:
-            if self.media.state["recording"]:
-                return "listening"
             if self.media.state["speaking"]:
                 return "speaking"
+            if not self.active and (
+                self.media.state["recording"] or getattr(self.media, "awake", False)
+            ):
+                return "listening"
         return self.status
 
     def set_status(self, status, detail, event=True):
@@ -654,6 +657,11 @@ class Controller:
                 raise Conflict(
                     "Send or discard the microphone recording before chatting"
                 )
+            # Addressed speech can refer to the current view without naming a
+            # vision mode. Capture once per turn, never stream frames to the LLM.
+            vision = vision or bool(
+                spoken and self.media and self.media.state["camera"]
+            )
             attachments = (
                 self.media.vision_attachment() if vision and self.media else []
             )

@@ -2,7 +2,7 @@
 
 An embodied digital robot for Ubuntu: a living wallpaper and Presence Control Center, powered by LampOS and one selected AI runtime/model.
 
-**Status:** four live GPU avatars and phase 4 local speech, camera/device controls and scoped workspace approvals are implemented and installed. See [phase 3](docs/PHASE-3.md) and [phase 4](docs/PHASE-4.md) for evidence. The default idle saver meets the native wallpaper idle CPU budget; fixed-30 idle CPU and physical media qualification remain open. New desktop renderer code loads after a normal logout/login.
+**Status:** local voice/vision and wake/sleep stabilization are installed, with the owner-reference Progre portrait and a vision-capable default. [Phase 5](docs/PHASE-5.md) records the new checks and remaining hardware/release gates. One normal logout/login loads version 5’s native portrait and corner control; refresh the panel for its current preview.
 
 [Phase 1 setup and evidence](docs/PHASE-1.md). The installed **Project Avalon** app-menu/Desktop launcher opens the Presence Control Center. Log out/in once to load the newly installed desktop avatars (extension version 3). The control-center preview updates immediately.
 

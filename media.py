@@ -64,7 +64,7 @@ def screen_locked():
 
 
 def terminate(proc):
-    if proc is None:
+    if proc is None or proc.poll() is not None:
         return
     try:
         os.killpg(proc.pid, signal.SIGTERM)
@@ -95,25 +95,9 @@ class Media:
             "output": "default",
             "camera": "",
             "spoken_replies": True,
+            "listener_phrase": "hey progre",
         }
         saved = controller.store.get("devices", {})
-        if not saved:
-            try:
-                product = Path("/sys/class/dmi/id/product_name").read_text().lower()
-                if "ms-s1" in product:
-                    onboard = next(
-                        (
-                            d["id"]
-                            for d in devices()["inputs"]
-                            if d["id"].startswith("alsa_input.pci-")
-                            and "analog" in d["id"]
-                        ),
-                        None,
-                    )
-                    if onboard:
-                        defaults["input"] = onboard
-            except (OSError, subprocess.SubprocessError, ValueError):
-                pass
         self.settings = {key: saved.get(key, value) for key, value in defaults.items()}
         if not saved:
             controller.store.set("devices", self.settings)
@@ -128,6 +112,11 @@ class Media:
             "notice": "",
         }
         self.epoch = 0
+        self.listener = None
+        self.awake = False
+        self.followup = 0.0
+        self.listener_paused = True
+        self.listener_ready = False
         self.camera_epoch = 0
         self.capture = self.recognizer = self.synthesis = self.player = self.camera = (
             None
@@ -150,6 +139,8 @@ class Media:
     def snapshot(self):
         return {
             **self.state,
+            "awake": self.awake,
+            "listener_ready": self.listener_ready,
             "recording_ready": bool(self.pcm),
             "audio_busy": self.synthesis is not None,
             "camera_starting": self.camera is not None and not self.state["camera"],
@@ -176,6 +167,24 @@ class Media:
                         self.stop()
                         self.control.pending_action = None
                     self._changed()
+                if self.awake:
+                    if (
+                        not self.listener_ready
+                        and time.monotonic() - self.wake_started > 30
+                    ):
+                        self.stop()
+                        self.state["notice"] = (
+                            "Local listener did not start. Check voice installation and wake Progre again."
+                        )
+                    elif not self.camera or self.camera.poll() is not None:
+                        self.stop()
+                        self.state["notice"] = (
+                            "Presence slept because the camera stopped."
+                        )
+                    else:
+                        self._pause_listener(
+                            bool(self.control.active or self.synthesis or self.player)
+                        )
 
     def configure(self, data):
         if not isinstance(data, dict) or set(data) - set(self.settings):
@@ -195,6 +204,16 @@ class Media:
                 )
         if type(candidate["spoken_replies"]) is not bool:
             raise ValueError("Choose whether voice replies are enabled")
+        phrase = candidate["listener_phrase"]
+        if (
+            not isinstance(phrase, str)
+            or not 1 <= len(phrase.strip()) <= 80
+            or not any(c.isalnum() for c in phrase)
+        ):
+            raise ValueError(
+                "Listener phrase must contain 1–80 characters including a letter or number"
+            )
+        candidate["listener_phrase"] = phrase.strip()
         self.stop()
         self.settings = candidate
         self.control.store.set("devices", candidate)
@@ -226,6 +245,8 @@ class Media:
         ]
 
     def record(self):
+        if self.awake:
+            raise ValueError("Put Progre to sleep before recording manually")
         self._unlocked()
         if self.control.active or not self.control.ws:
             raise ValueError(
@@ -273,7 +294,7 @@ class Media:
             if epoch == self.epoch and self.capture is proc:
                 self.state["recording"] = False
                 self.state["level"] = 0.0
-                if proc.wait() != 0:
+                if proc.wait() != 0 and len(self.pcm) < 480000:
                     self.state["notice"] = (
                         "Microphone capture failed. Check the selected input and retry."
                     )
@@ -521,5 +542,129 @@ class Media:
         self._changed()
 
     def stop(self):
+        self.awake = False
+        self.listener_ready = False
+        self.followup = 0.0
+        worker, self.listener = self.listener, None
+        terminate(worker)
         self.stop_audio()
         self.stop_camera()
+
+    def wake(self):
+        self._unlocked()
+        if self.awake:
+            return
+        if not self.control.ws or self.control.active:
+            raise ValueError(
+                "Connect a vision model and finish its turn before waking Progre"
+            )
+        current = self.control.store.session(self.control.selected)
+        if not self.control.catalog.validate(current["model"], current["mode"]).get(
+            "vision"
+        ):
+            raise ValueError("Select an installed vision model before waking Progre")
+        if not self.snapshot()["speech_ready"]:
+            raise ValueError("Install local voice components before waking Progre")
+        if not self.settings["camera"]:
+            cameras = devices()["cameras"]
+            if len(cameras) != 1:
+                raise ValueError(
+                    "Choose a connected camera in Devices before waking Progre"
+                )
+            self.settings["camera"] = cameras[0]["id"]
+            self.control.store.set("devices", self.settings)
+        self._target("output")
+        inventory = devices()
+        if not inventory["outputs"] or not inventory["inputs"]:
+            raise ValueError("Connect a microphone and speakers before waking Progre")
+        target = self._target("input")
+        self.stop()
+        try:
+            self.enable_camera()
+            self.listener_paused = True
+            worker = self.listener = self._spawn(
+                [
+                    *WORKER,
+                    "listen",
+                    json.dumps(
+                        {"phrase": self.settings["listener_phrase"], "target": target}
+                    ),
+                ],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+            )
+            self.awake = True
+            self.wake_started = time.monotonic()
+            self.state["notice"] = "Waking up: opening camera and local listener…"
+            threading.Thread(target=self._listen, args=(worker,), daemon=True).start()
+            self._changed()
+        except Exception:
+            self.stop()
+            raise
+
+    def _pause_listener(self, paused):
+        if (
+            not self.listener_ready
+            or not self.listener
+            or paused == self.listener_paused
+        ):
+            return
+        try:
+            self.listener.stdin.write((json.dumps({"pause": paused}) + "\n").encode())
+            self.listener.stdin.flush()
+            self.listener_paused = paused
+            if not paused:
+                if self.followup == float("inf"):
+                    self.followup = time.monotonic() + 10
+                self.state["notice"] = (
+                    "Listening for “" + self.settings["listener_phrase"] + "”"
+                )
+            self._changed()
+        except (BrokenPipeError, OSError):
+            self.stop()
+            self.state["notice"] = (
+                "Local listener stopped. Check the microphone and wake Progre again."
+            )
+
+    def _listen(self, worker):
+        try:
+            for line in worker.stdout:
+                event = json.loads(line)
+                with self.control.lock:
+                    if self.listener is not worker or not self.awake:
+                        return
+                    self._unlocked()
+                    if event.get("ready"):
+                        self.listener_ready = True
+                        self._pause_listener(False)
+                        continue
+                    if "level" in event and not self.listener_paused:
+                        self.state["level"] = max(0.0, min(1.0, float(event["level"])))
+                        self._changed()
+                        continue
+                    if self.listener_paused or self.control.active or self.synthesis:
+                        continue
+                    text = event.get("text", "")
+                    if not text or not (
+                        event.get("addressed") or time.monotonic() < self.followup
+                    ):
+                        continue
+                    self._pause_listener(True)
+                    self.followup = float("inf")
+                    if event.get("bare"):
+                        self.speak("Yes? I'm listening.")
+                    else:
+                        self.control.chat(text, spoken=True)
+            raise ValueError(
+                "Local listener disconnected. Check the selected microphone and wake Progre again."
+            )
+        except Exception as exc:
+            with self.control.lock:
+                if self.listener is worker:
+                    self.stop()
+                    self.state["notice"] = (
+                        str(exc)
+                        if isinstance(exc, ValueError)
+                        else "Local listener failed. Wake Progre again."
+                    )
+                    self._changed()

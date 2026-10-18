@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-18T19:46:30.281561+00:00",
+  "generatedAt": "2026-10-18T21:19:04.219817+00:00",
   "title": "Design System: Project Avalon",
   "extensions": {
     "colorMeta": {
@@ -280,26 +280,26 @@
       "kind": "card",
       "refersTo": "avatar-card-selected",
       "description": "Selected card caption and structural treatment; renderer capture occupies a 3:4 image region in the application.",
-      "html": "<button class=\"ds-avatar\" aria-pressed=\"true\"><span>Abstract Core<small>Orbital light · pure motion</small></span></button>",
+      "html": "<button class=\"ds-avatar\" aria-pressed=\"true\"><span>Abstract Core<small>Orbital light \u00b7 pure motion</small></span></button>",
       "css": ".ds-avatar{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;background:var(--surface,#101721);color:var(--text,#edf4fa);padding:0;text-align:left;border:1px solid var(--cyan,#79dce8);border-radius:12px;outline:2px solid var(--cyan,#79dce8);outline-offset:3px;overflow:hidden;cursor:pointer;transition:background 150ms,border-color 150ms}.ds-avatar span{display:block;padding:16px;font-size:1rem}.ds-avatar small{display:block;color:var(--muted,#a0b0c1);font-size:.8rem;margin-top:6px}.ds-avatar:hover{background:#202d3c;border-color:#60768b}.ds-avatar:active{background:#27394a}.ds-avatar:focus-visible{outline:2px solid var(--cyan,#79dce8);outline-offset:3px}@media(prefers-reduced-motion:reduce){.ds-avatar{transition:none}}"
     },
     {
       "name": "Appearance select",
       "kind": "input",
       "description": "Labeled native motion setting with supporting text; same treatment serves detail and frame limit.",
-      "html": "<label class=\"ds-setting-label\" for=\"ds-motion\">Motion</label><select class=\"ds-setting\" id=\"ds-motion\"><option>Follow Ubuntu / browser</option><option>Animated</option><option>Still · react to state changes</option></select><p class=\"ds-setting-help\">Still mode keeps the avatar and state colors without continuous motion.</p>",
+      "html": "<label class=\"ds-setting-label\" for=\"ds-motion\">Motion</label><select class=\"ds-setting\" id=\"ds-motion\"><option>Follow Ubuntu / browser</option><option>Animated</option><option>Still \u00b7 react to state changes</option></select><p class=\"ds-setting-help\">Still mode keeps the avatar and state colors without continuous motion.</p>",
       "css": ".ds-setting-label{display:block;margin-bottom:10px;font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;color:var(--text,#edf4fa);font-size:.8rem}.ds-setting{width:100%;font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;font-size:15px;background:#0c131d;color:var(--text,#edf4fa);border:1px solid #394757;border-radius:8px;padding:11px 12px}.ds-setting:focus-visible{outline:2px solid var(--cyan,#79dce8);outline-offset:3px}.ds-setting-help{font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif;color:var(--muted,#a0b0c1);font-size:.85rem;line-height:1.6;margin-top:12px}"
     },
     {
       "name": "Device activity",
       "kind": "custom",
-      "description": "Native audio meter paired with textual activity; locked-state guidance remains explicit. This example is inactive, not hardware qualification.",
-      "html": "<div class=\"ds-device-live\"><meter min=\"0\" max=\"1\" value=\"0\" aria-label=\"Audio activity\"></meter><span>No devices active</span></div>",
-      "css": ".ds-device-live{display:flex;align-items:center;gap:16px;margin-bottom:32px;color:var(--muted,#a0b0c1);font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif}.ds-device-live meter{width:160px;height:12px;accent-color:var(--cyan,#79dce8)}"
+      "description": "Wrapping wake/sleep action, native audio meter and textual activity. Inactive example; not hardware qualification.",
+      "html": "<div class=\"ds-device-live\"><button class=\"ds-wake\" type=\"button\">Wake up</button><meter min=\"0\" max=\"1\" value=\"0\" aria-label=\"Audio activity\"></meter><span>No devices active</span></div>",
+      "css": ".ds-device-live{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-bottom:32px;color:var(--muted,#a0b0c1);font-family:\"Ubuntu Sans\",\"Ubuntu\",\"Noto Sans\",sans-serif}.ds-device-live meter{width:160px;flex:1 1 90px;max-width:160px;height:12px;accent-color:var(--cyan,#79dce8)}.ds-wake{font-family:inherit;font-size:15px;background:var(--cyan,#79dce8);color:#07141b;border:1px solid var(--cyan,#79dce8);border-radius:8px;padding:10px 16px;flex-shrink:0;white-space:nowrap;cursor:pointer}.ds-wake:hover{background:#b0eef5;border-color:#b0eef5}.ds-wake:active{background:#5ec5d1}.ds-wake:focus-visible{outline:2px solid var(--cyan,#79dce8);outline-offset:3px}"
     }
   ],
   "narrative": {
-    "overview": "Avalon uses quiet dark surfaces, precise borders and a luminous GPU avatar. The implemented interface supports one selected model and session with readable conversation, explicit access controls and visible runtime state. This document captures the existing system.\n\nThe owner’s supplied wide_cinematic_poster_mockup_layout_of_a_desktop.png remains the ultimate luminous avatar reference. Phase 3 delivers four original shader bodies: cyan/gold Ethereal Human, violet Neon Sentinel with a tapered open cowl, recessed dark mask and angular armor, teal/gold Progre Mascot and purple orbital Abstract Core. Surface composition stays in .impeccable/surfaces/control-center.md and appearance.md.",
+    "overview": "Avalon uses quiet dark surfaces, precise borders and a luminous GPU avatar. The implemented interface supports one selected model and session with readable conversation, explicit access controls and visible runtime state. This document captures the existing system.\n\nThe supplied wide_cinematic_poster_mockup_layout_of_a_desktop.png establishes the luminous avatar family; docs/reference/progre-owner-reference.png is the latest authority for Progre. Progre uses a transparent raster cutout extracted from that image and animated by the shared GPU texture shader. Its anatomy is only a face with two tiny hands and two tiny feet directly adjoining it: side spheres are eyes, white slashes are the nose and the enclosed zigzag is the mouth. It has no torso, body, chest or neck. Cyan/gold Ethereal Human, violet Neon Sentinel and purple orbital Abstract Core retain procedural volume geometry. Surface composition stays in .impeccable/surfaces/control-center.md and appearance.md.",
     "keyCharacteristics": [
       "Dark tonal surfaces and thin structural borders.",
       "Native Ubuntu typography and original vector stroke icons.",
@@ -319,10 +319,12 @@
       "Do reuse the native Ubuntu font stack and original local vectors."
     ],
     "donts": [
-      "Don’t treat a static avatar capture as proof of live runtime activity.",
-      "Don’t invent telemetry, activity or available device capabilities.",
-      "Don’t add decorative glow to ordinary controls and containers.",
-      "Don’t replace the owner-pinned visual authority with a new identity."
+      "Don\u2019t treat a static avatar capture as proof of live runtime activity.",
+      "Don\u2019t invent telemetry, activity or available device capabilities.",
+      "Don\u2019t add decorative glow to ordinary controls and containers.",
+      "Don\u2019t replace the owner-pinned visual authority with a new identity.",
+      "Don\u2019t add a torso, body, chest or neck to Progre, or reinterpret its side-sphere eyes, slash nose and zigzag mouth.",
+      "Don\u2019t add a background star field; preserve character texture and flowing rays."
     ]
   }
 }

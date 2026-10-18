@@ -16,7 +16,7 @@ def main():
     for path in [ROOT/'.tools/avalon-runtime',ROOT/'.tools/avalon-probe',ROOT/'.runtime/agent/gateway.json']:
         if not path.exists():raise RuntimeError('Build and configure the isolated runtime before installation')
     package=ROOT/'.runtime/packages';package.mkdir(parents=True,exist_ok=True)
-    run('gnome-extensions','pack','--force','--out-dir',str(package),'--extra-source=ownership.js','--extra-source=ownership-core.js','--extra-source=presence.glsl',str(ROOT/'gnome-extension'))
+    run('gnome-extensions','pack','--force','--out-dir',str(package),'--extra-source=ownership.js','--extra-source=ownership-core.js','--extra-source=presence.glsl','--extra-source=progre.png',str(ROOT/'gnome-extension'))
     run('gnome-extensions','install','--force',str(package/'avalon@progretech.com.shell-extension.zip'))
     constellation=ROOT.parent/'constellation'
     if constellation.exists():

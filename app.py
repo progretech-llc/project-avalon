@@ -207,16 +207,20 @@ def create_app(controller=None, test_config=None):
         data = request.get_json()
         operation = data.get("action") if isinstance(data, dict) else None
         with control.lock:
-            if operation == "record":
+            if operation == "wake":
+                control.media.wake()
+            elif operation == "sleep":
+                control.media.stop()
+            elif operation == "record":
                 control.media.record()
             elif operation == "send_recording":
                 control.media.finish()
             elif operation == "mute":
-                control.media.stop_audio()
+                control.media.stop() if control.media.awake else control.media.stop_audio()
             elif operation == "camera_on":
                 control.media.enable_camera()
             elif operation == "camera_off":
-                control.media.stop_camera()
+                control.media.stop() if control.media.awake else control.media.stop_camera()
             elif operation == "read_reply":
                 messages = control.store.messages(control.selected)
                 replies = [

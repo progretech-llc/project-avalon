@@ -285,6 +285,21 @@ class ControlTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.connect(mode="chat", commands=True)
 
+    def test_default_requires_vision_and_tools_and_prefers_qualified_local_model(self):
+        models = [
+            {"name": "coder:tiny", "size": 1, "tools": True, "vision": False},
+            {"name": "vision-only", "size": 1, "tools": False, "vision": True},
+            {"name": "qwen3.5:2b", "size": 2, "tools": True, "vision": True},
+            {"name": "qwen3.5:4b", "size": 4, "tools": True, "vision": True},
+        ]
+        with patch.object(Catalog, "models", return_value=models):
+            self.assertEqual(Catalog().choose(), "qwen3.5:4b")
+        with patch.object(Catalog, "models", return_value=models[:2]):
+            with self.assertRaisesRegex(Unavailable, "vision-and-tool"):
+                Catalog().choose()
+        with patch.object(Catalog, "models", return_value=[models[2]]):
+            self.assertEqual(Catalog().choose(), "qwen3.5:2b")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -46,6 +46,7 @@ class MediaTest(unittest.TestCase):
                 self.media.enable_camera,
                 lambda: self.media.speak("hello"),
                 self.media.vision_attachment,
+                self.media.wake,
             ):
                 with self.assertRaisesRegex(ValueError, "locked"):
                     action()
@@ -127,6 +128,101 @@ class MediaTest(unittest.TestCase):
                 self.control.chat("describe", vision=True)
         self.assertEqual(self.control.runtime.current.sent, [])
         self.assertEqual(self.control.snapshot()["messages"], [])
+
+    def test_spoken_command_uses_one_current_camera_frame(self):
+        self.media.state["camera"] = True
+        image = [{"type": "image", "url": "data:image/jpeg;base64,ZnJhbWU="}]
+        with patch.object(self.media, "vision_attachment", return_value=image) as frame:
+            self.control.chat("Can you tell me what this is?", spoken=True)
+        frame.assert_called_once_with()
+        payload = self.control.runtime.current.sent[-1]["payload"]
+        self.assertEqual(payload["attachments"], image)
+
+    def test_spoken_camera_failure_does_not_send_a_text_only_guess(self):
+        self.media.state["camera"] = True
+        with patch.object(
+            self.media, "vision_attachment", side_effect=ValueError("stale camera")
+        ):
+            with self.assertRaisesRegex(ValueError, "stale camera"):
+                self.control.chat("What is this?", spoken=True)
+        self.assertEqual(self.control.runtime.current.sent, [])
+        self.assertEqual(self.control.snapshot()["messages"], [])
+
+    def test_wake_requires_vision_without_starting_devices(self):
+        with (
+            patch("media.screen_locked", return_value=False),
+            patch.object(self.media, "_spawn") as spawn,
+        ):
+            with self.assertRaisesRegex(ValueError, "vision model"):
+                self.media.wake()
+            spawn.assert_not_called()
+
+    def test_wake_and_sleep_own_listener_and_camera(self):
+        self.media.settings["input"] = "default"
+        worker = Mock()
+        worker.poll.return_value = None
+
+        def camera():
+            self.media.camera = worker
+            self.media.state["camera"] = True
+
+        with (
+            patch("media.screen_locked", return_value=False),
+            patch("media.devices", return_value=INVENTORY),
+            patch.object(
+                self.control.catalog, "validate", return_value={"vision": True}
+            ),
+            patch.object(self.media, "snapshot", return_value={"speech_ready": True}),
+            patch.object(self.media, "enable_camera", side_effect=camera),
+            patch.object(self.media, "_spawn", return_value=worker),
+            patch("threading.Thread.start"),
+            patch("media.terminate"),
+        ):
+            self.media.wake()
+            self.assertTrue(self.media.awake)
+            self.assertIs(self.media.listener, worker)
+            self.assertEqual(
+                self.media.settings["camera"], INVENTORY["cameras"][0]["id"]
+            )
+            self.media.stop()
+        self.assertFalse(self.media.awake)
+        self.assertIsNone(self.media.listener)
+        self.assertIsNone(self.media.camera)
+
+    def test_ambient_transcript_never_dispatches(self):
+        worker = Mock()
+        worker.stdout = [
+            json.dumps({"text": "open everything", "addressed": False}).encode()
+        ]
+        self.media.awake = self.media.listener_ready = True
+        self.media.listener_paused = False
+        self.media.listener = worker
+        with patch("media.screen_locked", return_value=False), patch("media.terminate"):
+            self.media._listen(worker)
+        self.assertEqual(self.control.runtime.current.sent, [])
+        self.assertFalse(self.media.awake)
+
+    def test_listener_phrase_is_validated_before_devices_stop(self):
+        with (
+            patch("media.devices", return_value=INVENTORY),
+            patch.object(self.media, "stop") as stop,
+        ):
+            for phrase in ("", "   ", "!", "x" * 81, None):
+                with self.assertRaises(ValueError):
+                    self.media.configure({"listener_phrase": phrase})
+            stop.assert_not_called()
+
+    def test_pipewire_sample_limit_keeps_complete_recording_with_exit_one(self):
+        worker = Mock()
+        worker.stdout = io.BytesIO(b"\x01\x00" * 240000)
+        worker.wait.return_value = 1
+        self.media.capture = worker
+        self.media.state["recording"] = True
+        self.media._read_audio(worker, self.media.epoch)
+        self.assertEqual(len(self.media.pcm), 480000)
+        self.assertFalse(self.media.state["recording"])
+        self.assertIn("fifteen seconds", self.media.state["notice"])
+        self.media.capture = None
 
     def test_rms_and_public_visual_contract_exclude_raw_media(self):
         self.assertEqual(rms(b"\0" * 320), 0)

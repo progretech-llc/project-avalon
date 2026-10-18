@@ -19,17 +19,6 @@ float avBody(vec3 p,float avatar,float t) {
         return min(min(a,b),length(p)-0.20);
     }
     float breathe=sin(t*1.15)*0.012;
-    if(avatar>1.5) {
-        p.y+=0.20;
-        vec3 h=p-vec3(0,0.34,0);h.xz=avRotate(sin(t*0.47)*0.13+u_gaze_x*.28)*h.xz;
-        float head=avEllipsoid(h,vec3(0.56,0.46,0.40));
-        float body=avEllipsoid(p-vec3(0,-0.37,0),vec3(0.37+breathe,0.43,0.30));
-        float ears=avEllipsoid(vec3(abs(p.x)-0.59,p.y-0.32,p.z),vec3(0.13,0.30,0.24));
-        float arms=avCapsule(p,vec3(sign(p.x)*0.38,-0.31,0),vec3(sign(p.x)*0.56,-0.66,0.07),0.12);
-        float feet=avEllipsoid(vec3(abs(p.x)-0.22,p.y+0.81,p.z-0.08),vec3(0.19,0.13,0.25));
-        float antenna=avCapsule(p,vec3(0,0.76,0),vec3(0.08,1.00,0),0.025);
-        return min(min(min(avSmooth(head,body,0.08),ears),min(arms,feet)),min(antenna,length(p-vec3(0.08,1,0))-0.07));
-    }
     if(avatar>0.5) {
         // Projecting tapered cowl, recessed mask and constructed armor silhouette.
         vec3 h=p-vec3(0,0.97,-0.03);h.xz=avRotate(sin(t*.31)*.06+u_gaze_x*.28)*h.xz;
@@ -84,7 +73,7 @@ vec3 avalon(vec2 uv,float aspect,float time,float state,float avatar,float quali
     vec2 p=screen*3.05;
     vec3 cold=vec3(0.12,0.76,0.88),warm=vec3(1.0,0.49,0.11);
     if(avatar>0.5&&avatar<1.5){cold=vec3(0.47,0.14,1.0);warm=vec3(1.0,0.24,0.78);}
-    if(avatar>1.5&&avatar<2.5){cold=vec3(0.08,0.79,0.61);warm=vec3(1.0,0.66,0.15);}
+    if(avatar>1.5&&avatar<2.5){cold=vec3(0.12,0.76,0.88);warm=vec3(1.0,0.66,0.26);}
     if(avatar>2.5){cold=vec3(0.26,0.20,0.95);warm=vec3(0.71,0.34,1.0);}
     vec3 statusColor=cold;
     if(state>4.5&&state<5.5)statusColor=vec3(0.12,1.0,0.48);
@@ -104,9 +93,24 @@ vec3 avalon(vec2 uv,float aspect,float time,float state,float avatar,float quali
         float spread=exp(-0.6*abs(p.x));
         color+=mix(cold,warm,0.5+0.5*sin(p.x*1.3+f))*filament*spread*(0.22+active*.18);
     }
-    vec2 cell=floor(screen*vec2(440.0));
-    float star=avHash(vec3(cell,0.3));
-    color+=step(0.9975,star)*vec3(0.18,0.34,0.48)*(0.4+0.6*sin(star*110.0+t*0.35));
+    if(avatar>1.5&&avatar<2.5) {
+        // Owner's supplied Progre artwork, animated without changing its identity.
+        vec2 q=vec2(p.x/1.92+.5,p.y/2.88+.5);
+        float head=smoothstep(.42,.64,q.y);
+        q.x-=u_gaze_x*.018*head;q.y-=u_gaze_y*.010*head;
+        q.x=.5+(q.x-.5)*(1.0+.004*sin(t*1.15));
+        q.y+=.002*sin(t*1.15);
+        float mouth=exp(-80.0*dot((q-vec2(.48,.45))*vec2(1.0,2.0),(q-vec2(.48,.45))*vec2(1.0,2.0)));
+        q.y+=mouth*u_level*.008*sin(t*19.0);
+        if(q.x>=0.0&&q.x<=1.0&&q.y>=0.0&&q.y<=1.0) {
+            vec4 art=avPortrait(q);
+            float shimmer=.96+.04*sin(t*1.7)+active*.10*sin(q.y*21.0-t*3.0);
+            vec3 light=art.rgb*shimmer;
+            light+=statusColor*u_level*.18*art.rgb;
+            color=mix(color,light*connected,art.a);
+        }
+        return color;
+    }
     vec3 ro=vec3(0,0.04,4.5),rd=normalize(vec3(p,-4.4));
     float distance=2.8,hit=0.0,glow=0.0,surfaceD=0.0;vec3 pos=ro;
     if(abs(p.x)<1.08&&abs(p.y)<1.55)for(int i=0;i<72;i++) {
@@ -143,23 +147,6 @@ vec3 avalon(vec2 uv,float aspect,float time,float state,float avatar,float quali
         vec3 core=pos-vec3(0,avatar>1.5?-0.64:0.02,0.28);
         float heart=exp(-15.0*length(core));
         color+=mix(warm,statusColor,step(4.5,state)*0.6)*heart*(2.8+0.7*sin(t*2.0)+u_level*4.0);
-        if(avatar>1.5&&avatar<2.5) {
-            // Rounded visor and original friendly face, attached to moving head.
-            vec3 h=pos-vec3(0,0.14,0);h.xz=avRotate(sin(t*.47)*.13+u_gaze_x*.28)*h.xz;
-            float visor=step(abs(h.x),.41)*step(abs(h.y),.22)*step(.29,h.z);
-            float metallic=pow(max(0.0,dot(reflect(rd,n),normalize(vec3(-.4,.8,1)))),24.0);
-            vec3 ceramic=cold*(.12+light*.55+rim*.16)+vec3(.65,.88,.84)*metallic*.65;
-            if(abs(pos.x)>.48&&pos.y>-.2)ceramic=warm*(.23+light*.60+metallic);
-            color=mix(color,ceramic,.90);
-            color=mix(color,vec3(.008,.03,.035)+vec3(.06,.13,.13)*metallic,visor*.98);
-            float eyes=length(vec2(abs(h.x)-.20,h.y-.025));
-            float eye=exp(-110.0*abs(eyes-.075));
-            float blink=step(0.06,abs(sin(t*.32+1.2)));
-            color+=warm*eye*visor*blink*2.0;
-            float smile=abs(length(vec2(h.x,h.y+.005))-.13);
-            color+=warm*exp(-100.0*smile)*step(h.y,-.025)*visor;
-            color+=warm*pow(max(0.0,dot(n,normalize(vec3(-1,1,1)))),18.0)*.7;
-        }
         color*=connected;
     }
     float coreY=avatar>2.5?0.0:avatar>1.5?-0.64:0.02;

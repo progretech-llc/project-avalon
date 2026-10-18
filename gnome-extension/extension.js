@@ -3,8 +3,10 @@ import Cogl from "gi://Cogl";
 import Gio from "gi://Gio";
 import GLib from "gi://GLib";
 import GObject from "gi://GObject";
+import GdkPixbuf from "gi://GdkPixbuf";
 import Shell from "gi://Shell";
 import St from "gi://St";
+import Meta from "gi://Meta";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { Extension } from "resource:///org/gnome/shell/extensions/extension.js";
 import { claimWallpaper } from "./ownership.js";
@@ -49,15 +51,18 @@ const DEFAULTS = {
 const PresenceContent = GObject.registerClass(
   { Implements: [Clutter.Content] },
   class PresenceContent extends GObject.Object {
-    _init() {
+    _init(portraitPath) {
       super._init();
       this.pipeline = Cogl.Pipeline.new(
         global.stage.context.get_backend().get_cogl_context(),
       );
-      this.pipeline.set_layer_null_texture(0);
+      const pixels = GdkPixbuf.Pixbuf.new_from_file(portraitPath);
+      const texture = Cogl.Texture2D.new_from_data(global.stage.context.get_backend().get_cogl_context(),
+        pixels.width, pixels.height, Cogl.PixelFormat.RGBA_8888, pixels.rowstride, pixels.get_pixels());
+      this.pipeline.set_layer_texture(0, texture);
       const snippet = Cogl.Snippet.new(
         Cogl.SnippetHook.FRAGMENT,
-        "uniform float u_time,u_aspect,u_state,u_avatar,u_quality;\n" + source,
+        "vec4 avPortrait(vec2 p){return texture2D(cogl_sampler0,vec2(p.x,1.0-p.y));}\nuniform float u_time,u_aspect,u_state,u_avatar,u_quality;\n" + source,
         "",
       );
       snippet.set_replace(
@@ -150,6 +155,7 @@ export default class Avalon extends Extension {
       );
       this._stateTick = GLib.timeout_add(GLib.PRIORITY_LOW, 200, () => {
         this._readStatus();
+        this._updateWakeButton();
         return GLib.SOURCE_CONTINUE;
       });
       this._setFrameTimer();
@@ -176,6 +182,7 @@ export default class Avalon extends Extension {
     );
   }
   _readStatus() {
+    this._awake = false;
     let activity = 0,
       appearance = { ...DEFAULTS },
       model = "",
@@ -184,6 +191,7 @@ export default class Avalon extends Extension {
       const [ok, bytes] = GLib.file_get_contents(this._statePath);
       if (!ok || bytes.length > 4096) throw new Error("Invalid visual state");
       const data = JSON.parse(new TextDecoder().decode(bytes));
+      this._awake = data.awake === true && Math.abs(Date.now() / 1000 - data.heartbeat) < 10;
       const settings = data.appearance ?? {};
       // Persist the user's appearance even when the controller heartbeat expires.
       if (Object.prototype.hasOwnProperty.call(AVATARS, settings.avatar))
@@ -282,6 +290,23 @@ export default class Avalon extends Extension {
     this._dirty = false;
   }
   _build() {
+    if (this._wakeButton) {
+      Main.layoutManager.removeChrome(this._wakeButton);
+      this._wakeButton.destroy();
+    }
+    const monitor = Main.layoutManager.primaryMonitor;
+    if (monitor) {
+      this._wakeButton = new St.Button({label: "Wake up", reactive: true, can_focus: true,
+        style: "background-color: #10252d; color: #d9f9ff; border: 1px solid #67cbdc; border-radius: 12px; padding: 12px 24px; font-size: 16px;"});
+      this._wakeButton.set_position(monitor.x + 90, monitor.y + monitor.height - 84);
+      this._wakeButton.set_size(174, 48);
+      this._wakeButton.connect("clicked", () => {
+        try {
+          Gio.Subprocess.new(["systemctl", "--user", "start", "project-avalon-presence-toggle.service"], Gio.SubprocessFlags.NONE);
+        } catch (error) { console.error("Avalon presence toggle failed", error); }
+      });
+      Main.layoutManager.addChrome(this._wakeButton, {affectsStruts: false, trackFullscreen: true});
+    }
     for (const actor of this._areas) actor.destroy();
     this._areas = [];
     for (const monitor of Main.layoutManager.monitors) {
@@ -298,7 +323,7 @@ export default class Avalon extends Extension {
         }),
       });
       canvas.set_size(monitor.width, monitor.height);
-      const effect = new PresenceContent();
+      const effect = new PresenceContent(this.path + "/progre.png");
       canvas.set_content(effect);
       group.add_child(canvas);
       group._canvas = canvas;
@@ -350,7 +375,24 @@ export default class Avalon extends Extension {
     this._visible = undefined;
     this._dirty = true;
   }
+  _updateWakeButton() {
+    const button = this._wakeButton;
+    if (!button) return;
+    button.label = this._awake ? "Go to sleep" : "Wake up";
+    const [x,y] = button.get_transformed_position();
+    const covered = global.display.get_tab_list(Meta.TabList.NORMAL_ALL, global.workspace_manager.get_active_workspace()).some(w => {
+      if (w.minimized || w.get_window_type() === Meta.WindowType.DESKTOP) return false;
+      const r = w.get_frame_rect();
+      return r.x < x + button.width && r.x + r.width > x && r.y < y + button.height && r.y + r.height > y;
+    });
+    button.visible = !Main.overview.visible && !Main.screenShield.locked && !covered;
+  }
   disable() {
+    if (this._wakeButton) {
+      Main.layoutManager.removeChrome(this._wakeButton);
+      this._wakeButton.destroy();
+      this._wakeButton = null;
+    }
     for (const key of ["_tick", "_stateTick"]) {
       if (this[key]) GLib.Source.remove(this[key]);
       this[key] = null;

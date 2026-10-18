@@ -1,0 +1,63 @@
+{
+  "date": "2026-10-18",
+  "reasoning_model": "qwen3.5:4b",
+  "single_reasoning_runtime": true,
+  "python_unit_tests": 44,
+  "node_ownership_suite": "passed",
+  "browser": {
+    "javascript_errors": [],
+    "mobile_overflow": false,
+    "private_API_cache_entries": 0,
+    "offline_fallback": true
+  },
+  "actual_hardware": {
+    "camera": "Logitech Brio 101",
+    "camera_frame_to_selected_model": "complete response through Controller → LampOS → OpenCode → Ollama; raw frame/response private",
+    "speech_output": "Piper PCM played through OS default HDMI sink; process playback observed, human audibility not rated",
+    "onboard_analog_capture_rms": 0.78844,
+    "brio_capture_rms": 0.08721,
+    "selected_input": "Ubuntu default (Brio 101)",
+    "selected_output": "Ubuntu default (HDMI speakers)",
+    "sleep": "microphone listener, camera and speech processes released; private frame removed"
+  },
+  "voice_fixture": {
+    "method": "Piper synthetic PRO-Greh pronunciation → isolated PipeWire virtual sink/source → persistent local CPU Silero/Whisper → pinned LampOS SpeakerDecorator",
+    "bare": {
+      "text": "hey progre.",
+      "addressed": true,
+      "bare": true
+    },
+    "command": {
+      "text": "hey progre. tell me what this is.",
+      "addressed": true,
+      "bare": false
+    },
+    "limit": "Synthetic routing does not qualify the owner’s actual voice or room acoustics"
+  },
+  "lifecycle": {
+    "owned_panel_service_stop": "owned browser main PID exited; unrelated Firefox processes preserved",
+    "panel_and_controller": "PartOf=graphical-session.target",
+    "native_toggle_helper": "authenticated on-demand fixed unit woke presence, then slept and removed frame",
+    "login_native_activation": "installed version 5; normal logout/login still required due GNOME imported JS cache"
+  },
+  "visual": {
+    "review": "ship for three scored fixes; see visual-review.md",
+    "mascot": "latest owner-reference face only; side sphere eyes, slash nose, enclosed zigzag mouth, tiny hands and feet; no torso",
+    "rendering": "reference-derived transparent 2.5D texture with bounded GPU lighting/gaze/speech deformation; no background star field",
+    "native": "actual isolated GNOME compositor, same renderer source; exclusive with Constellation"
+  },
+  "assets": {
+    "static/art/progre.png": "370492b06f89909365112b5761007e9641d338decf6b8ecb6781c475500e68b1",
+    "gnome-extension/progre.png": "370492b06f89909365112b5761007e9641d338decf6b8ecb6781c475500e68b1",
+    "docs/reference/progre-owner-reference.png": "1a290c38baf2328178e7b7a2cbba270c53a76483adb370619645743d88fba0c0"
+  },
+  "open_gates": [
+    "owner live wake phrase/command and audibility",
+    "physical unplug/replug and default-route changes",
+    "lock/logout during physical capture",
+    "long-session recovery/resources",
+    "phase-3 fixed-30 humanoid idle CPU gate",
+    "update/uninstall and diagnostics"
+  ],
+  "voice_customization": "Kokoro voice/pitch/delivery queued after stabilization with owner preference for high-pitched cartoon voice; not integrated"
+}

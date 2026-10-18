@@ -139,7 +139,7 @@ function controls() {
   $("send-recording").disabled =
     !authorized || busy || d?.locked || d?.transcribing;
   $("mute").disabled =
-    !authorized || busy || !(hasCapture || d?.speaking || d?.audio_busy);
+    !authorized || busy || !(hasCapture || d?.speaking || d?.audio_busy || d?.awake);
   $("read-reply").disabled =
     !authorized ||
     busy ||
@@ -547,7 +547,9 @@ $("permission-form").addEventListener("submit", (event) => {
 function renderMedia() {
   const d = state.devices;
   if (!d) return;
-  const mic = d.recording ? "Microphone recording" : "Microphone off";
+  const mic = d.awake ? (d.listener_ready ? "Listener on" : "Listener starting…") : d.recording ? "Microphone recording" : "Microphone off";
+  $("wake-presence").textContent = d.awake ? "Go to sleep" : "Wake up";
+  $("wake-presence").disabled = !authorized || busy || d.locked;
   const camera = d.camera
     ? "Camera on"
     : d.camera_starting
@@ -575,6 +577,7 @@ function renderMedia() {
     $("audio-output").value = d.settings.output;
     $("camera-device").value = d.settings.camera;
     $("spoken-replies").checked = d.settings.spoken_replies;
+    $("listener-phrase").value = d.settings.listener_phrase;
   }
 }
 async function refreshDevices() {
@@ -611,6 +614,7 @@ $("device-form").addEventListener("submit", (event) => {
         output: $("audio-output").value,
         camera: $("camera-device").value,
         spoken_replies: $("spoken-replies").checked,
+        listener_phrase: $("listener-phrase").value,
       }),
     );
     notice("Devices saved. Capture is off until you enable it.", "success");
@@ -634,6 +638,9 @@ $("stop-all").addEventListener("click", () =>
     apply(await api("/api/stop", {}));
   }),
 );
+$("wake-presence").addEventListener("click", () => action(async () => {
+  apply(await api("/api/media", {action: state.devices?.awake ? "sleep" : "wake"}));
+}));
 $("ask-view").addEventListener("click", () =>
   action(async () => {
     await api("/api/chat", {

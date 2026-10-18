@@ -35,6 +35,7 @@ def main():
     (config / "project-avalon.service").write_text(f"""[Unit]
 Description=Project Avalon Presence Control Center
 After=network.target
+PartOf=graphical-session.target
 
 [Service]
 Type=simple
@@ -47,6 +48,30 @@ TimeoutStopSec=15
 KillMode=control-group
 UMask=0077
 NoNewPrivileges=yes
+""")
+    (config / "project-avalon-panel.service").write_text(f"""[Unit]
+Description=Project Avalon owned control panel browser
+PartOf=graphical-session.target project-avalon.service
+After=graphical-session.target project-avalon.service
+Requires=project-avalon.service
+
+[Service]
+Type=simple
+WorkingDirectory={ROOT}
+ExecStart=/usr/bin/python3 {ROOT}/avalon.py --panel
+KillMode=control-group
+TimeoutStopSec=8
+UMask=0077
+""")
+    (config / "project-avalon-presence-toggle.service").write_text(f"""[Unit]
+Description=Toggle Project Avalon wake and sleep
+PartOf=graphical-session.target
+After=project-avalon.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 {ROOT}/avalon.py --toggle-presence
+UMask=0077
 """)
     (config / "project-avalon-runtime.service").write_text(f"""[Unit]
 Description=Project Avalon isolated LampOS gateway
