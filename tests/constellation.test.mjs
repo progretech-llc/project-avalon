@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const source=readFileSync(new URL('../gnome-extension/galaxy.js',import.meta.url),'utf8').replace("import Cairo from 'cairo';",'');
+const {layoutScene,hitTest,DEFAULT_SETTINGS}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const scene={nodes:[{id:'host',kind:'Host',x:0,y:0,z:0,path:'/fixture',root:'fixture'}],links:[]};
+const center=layoutScene(scene,0,1000,800,false,null,DEFAULT_SETTINGS);
+const looked=layoutScene(scene,0,1000,800,false,null,{...DEFAULT_SETTINGS,avalon_gaze:[.5,-.5]});
+assert.equal(looked.coordinates[0][0]-center.coordinates[0][0],70);
+assert.equal(looked.coordinates[0][1]-center.coordinates[0][1],48);
+assert.equal(hitTest(scene,looked.coordinates,looked.visible,...looked.coordinates[0]),scene.nodes[0]);
+assert.equal(hitTest(scene,looked.coordinates,looked.visible,...center.coordinates[0]),null);
+const browser=readFileSync(new URL('../static/galaxy.js',import.meta.url),'utf8').replace("import Cairo from './cairo-canvas.js';","import Cairo from 'cairo';");
+assert.equal(browser,readFileSync(new URL('../gnome-extension/galaxy.js',import.meta.url),'utf8'));
+console.log('Galaxy: attention projection and pointer targets agree; native/browser scene logic matches');

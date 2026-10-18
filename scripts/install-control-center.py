@@ -88,6 +88,9 @@ UMask=0077
 NoNewPrivileges=yes
 """)
     subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
+    subprocess.run(
+        ["/usr/bin/python3", str(ROOT / "scripts/install-lampos-host.py")], check=True
+    )
     print(
         "Installed on-demand Presence Control Center. Open Project Avalon from the app menu or Desktop."
     )

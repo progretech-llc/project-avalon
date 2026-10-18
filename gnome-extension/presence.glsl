@@ -24,7 +24,7 @@ float avBody(vec3 p,float avatar,float t) {
         vec3 h=p-vec3(u_gaze_x*.07,.18+u_gaze_y*.035,0);
         h.xz=avRotate(u_gaze_x*.48+.035*sin(t*.5))*h.xz;
         h.yz=avRotate(u_gaze_y*.28)*h.yz;
-        float face=avEllipsoid(h,vec3(.69+breathe,.67,.56));
+        float face=avBox(h,vec3(.46+breathe,.44,.29))-.23;
         float eyes=avEllipsoid(vec3(abs(h.x)-.72,h.y+.03,h.z-.08),vec3(.23,.25,.21));
         vec3 hand=vec3(abs(p.x)-.48,p.y+.49-.025*sin(t*1.2+sign(p.x)),p.z-.34);
         float palm=avEllipsoid(hand,vec3(.13,.11,.13));
@@ -32,10 +32,7 @@ float avBody(vec3 p,float avatar,float t) {
         fingers=min(fingers,avCapsule(hand,vec3(.02,.04,.08),vec3(.02,.15,.10),.047));
         fingers=min(fingers,avCapsule(hand,vec3(.09,0,.06),vec3(.13,.09,.08),.043));
         float feet=avEllipsoid(vec3(abs(p.x)-.24,p.y+.72,p.z-.10),vec3(.22,.16,.27));
-        vec3 orbit=p-vec3(0,.18,0);orbit.xy=avRotate(.35*sin(t*.4))*orbit.xy;
-        orbit.yz=avRotate(.82)*orbit.yz;
-        float thread=length(vec2(length(orbit.xz)-.90,orbit.y))-.009;
-        return min(min(face,eyes),min(min(avSmooth(palm,fingers,.025),feet),thread));
+        return min(min(face,eyes),min(avSmooth(palm,fingers,.025),feet));
     }
     if(avatar>0.5) {
         // Projecting tapered cowl, recessed mask and constructed armor silhouette.
@@ -92,7 +89,7 @@ vec3 avalon(vec2 uv,float aspect,float time,float state,float avatar,float quali
     vec2 p=screen*3.05;
     vec3 cold=vec3(0.12,0.76,0.88),warm=vec3(1.0,0.49,0.11);
     if(avatar>0.5&&avatar<1.5){cold=vec3(0.47,0.14,1.0);warm=vec3(1.0,0.24,0.78);}
-    if(avatar>1.5&&avatar<2.5){cold=vec3(0.12,0.76,0.88);warm=vec3(1.0,0.66,0.26);}
+    if(avatar>1.5&&avatar<2.5){cold=vec3(.05,.78,1.0);warm=vec3(1.0,.08,.62);}
     if(avatar>2.5){cold=vec3(0.26,0.20,0.95);warm=vec3(0.71,0.34,1.0);}
     vec3 statusColor=cold;
     if(state>4.5&&state<5.5)statusColor=vec3(0.12,1.0,0.48);
@@ -105,8 +102,31 @@ vec3 avalon(vec2 uv,float aspect,float time,float state,float avatar,float quali
     vec3 color=vec3(0.012,0.019,0.038);
     float cloud=avNoise(vec3(screen*3.0,t*0.025));
     color+=vec3(0.055,0.018,0.10)*pow(cloud,2.0)*exp(-0.6*length(p));
-    // Flowing filaments occupy actual depth behind the body, not an image loop.
-    for(int j=0;j<4;j++) {
+    if(avatar>1.5&&avatar<2.5) {
+        color=mix(vec3(.016,.006,.055),vec3(.17,.018,.19),exp(-2.4*length(p-vec2(0,.15))));
+        vec2 sun=p-vec2(0,.63);float disk=1.0-smoothstep(.57,.59,length(sun));
+        float bands=step(.15+(.59-sun.y)*.20,fract((sun.y+.59)*10.0));
+        vec3 sunset=mix(vec3(1.0,.05,.46),vec3(1.0,.72,.12),clamp(sun.y+.5,0.,1.));
+        color+=sunset*(disk*bands*.85+exp(-8.0*length(sun))*.20);
+        float horizon=-.40;
+        float side=smoothstep(.30,1.8,abs(p.x));
+        float ridge=horizon+side*(.13+.14*abs(sin(p.x*3.3))+.10*abs(sin(p.x*7.7)));
+        if(p.y<ridge&&p.y>horizon-.06){
+            float mesh=exp(-85.0*abs(fract(p.x*5.0+p.y*11.0)-.5));
+            color=vec3(.026,.009,.065)+mix(cold,warm,.5)*(mesh*.30+exp(-180.0*abs(p.y-ridge))*.7);
+        }
+        if(p.y<horizon){
+            float depth=1.0/max(.035,horizon-p.y);
+            vec2 grid=vec2(p.x*depth*1.6,depth*.75+t*.20);
+            vec2 line=abs(fract(grid)-.5);
+            float width=clamp(depth*.007,.015,.10);
+            float wire=1.0-smoothstep(width,width*1.8,min(line.x,line.y));
+            float fade=smoothstep(0.,.12,horizon-p.y);
+            color=vec3(.025,.005,.065)+mix(warm,cold,.25+.25*sin(grid.y*.3))*wire*fade*.55;
+        }
+    }
+    // Flowing filaments remain exclusive to the other appearance options.
+    if(avatar<1.5||avatar>2.5)for(int j=0;j<4;j++) {
         float f=float(j),y=0.30*sin(p.x*1.7+t*(0.22+f*.03)+f*1.8)+0.12*sin(p.x*3.0-t*.4+f)-0.20;
         float filament=exp(-125.0*abs(p.y-y-f*.12));
         float spread=exp(-0.6*abs(p.x));
@@ -152,6 +172,14 @@ vec3 avalon(vec2 uv,float aspect,float time,float state,float avatar,float quali
             vec3 h=pos-vec3(u_gaze_x*.07,.18+u_gaze_y*.035+.025*sin(t*.85),0);
             h.xz=avRotate(u_gaze_x*.48+.035*sin(t*.5))*h.xz;
             h.yz=avRotate(u_gaze_y*.28)*h.yz;
+            vec3 meshPoint=pos*9.0;
+            vec2 tile=fract(meshPoint.xy);
+            float lines=min(min(min(tile.x,1.0-tile.x),min(tile.y,1.0-tile.y)),abs(tile.x-tile.y)*.707);
+            float wire=1.0-smoothstep(.022,.065,lines);
+            float facet=avHash(floor(meshPoint)+step(tile.x,tile.y));
+            color=vec3(.025,.006,.075)+cold*(.025+light*.035+facet*.045);
+            color+=mix(warm,cold,.5+.5*sin(h.y*2.0))*wire*(.32+light*.4)+mix(warm,cold,light)*edge*1.1;
+            color+=statusColor*wire*active*.35;
             vec3 q=vec3(h.xy,0);
             float front=smoothstep(.20,.42,h.z);
             float nose=min(avCapsule(q,vec3(-.24,.15,0),vec3(-.17,.29,0),.024),avCapsule(q,vec3(.17,.27,0),vec3(.23,.12,0),.024));
@@ -161,7 +189,7 @@ vec3 avalon(vec2 uv,float aspect,float time,float state,float avatar,float quali
             float mouth=min(min(avCapsule(q,a,b,.014),avCapsule(q,b,c,.014)),min(avCapsule(q,c,d,.014),avCapsule(q,d,e,.014)));
             mouth=min(mouth,min(min(avCapsule(q,e,f,.014),avCapsule(q,f,g,.014)),min(avCapsule(q,g,i,.014),avCapsule(q,i,j,.014))));
             mouth=min(mouth,min(min(avCapsule(q,j,k,.014),avCapsule(q,k,l,.014)),avCapsule(q,l,a,.014)));
-            color+=vec3(1,.87,.65)*(exp(-130.0*max(nose,0.0))+exp(-145.0*max(mouth,0.0)))*front*3.5;
+            color+=vec3(.75,.91,1.0)*(exp(-130.0*max(nose,0.0))+exp(-145.0*max(mouth,0.0)))*front*3.5;
             vec2 eye=vec2(abs(h.x)-.72,h.y+.03);
             float rings=exp(-110.0*abs(length(eye)-.17))+exp(-130.0*abs(length(eye)-.105));
             color+=mix(cold,warm,.6)*rings*step(.19,h.z)*2.3;

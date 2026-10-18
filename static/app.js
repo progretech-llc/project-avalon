@@ -1,4 +1,4 @@
-import { mountCore } from "./core.js?v=5.2";
+import { mountCore } from "./core.js?v=5.5";
 const $ = (id) => document.getElementById(id);
 let csrf = "",
   authorized = false,
@@ -96,10 +96,12 @@ function page(name) {
     appearance: "Appearance",
     devices: "Devices",
     permissions: "Permissions",
+    robot: "Robot",
   }[name];
+  if (name === "robot" && authorized) action(refreshRobot);
 }
 function controls() {
-  for (const button of document.querySelectorAll("[data-avatar]"))
+  for (const button of document.querySelectorAll("button[data-avatar]"))
     button.disabled = !authorized || busy;
   $("save-appearance").disabled = !authorized || busy;
   const target = platforms.find((p) => p.id === $("platform").value);
@@ -160,7 +162,7 @@ function controls() {
     !d?.settings.camera;
   $("camera-off").disabled =
     !authorized || busy || !(d?.camera || d?.camera_starting);
-  const selected = models.find((m) => m.name === state.session?.model);
+  const selected = state.session?.platform && state.session.platform !== "opencode" ? {vision:true} : models.find((m) => m.name === state.session?.model);
   $("ask-view").disabled =
     !authorized ||
     busy ||
@@ -169,12 +171,17 @@ function controls() {
     !selected?.vision ||
     !!state.active_turn;
   $("vision-capability").textContent = selected?.vision
-    ? "Your selected model supports images. Ask about this view sends one camera frame to that same model."
+    ? (state.session?.platform && state.session.platform !== "opencode" ? "One camera frame is sent to your native platform. Its configured model determines image support." : "Your selected model supports images. Ask about this view sends one camera frame to that same model.")
     : "Your selected model does not support images. Camera gaze still works. Select an installed vision model to ask about the view.";
   for (const id of ["save-devices", "refresh-devices", "save-desktop-actions"])
     $(id).disabled = !authorized || busy;
   $("save-permissions").disabled = !authorized || busy || !state.session;
-  $("status-commands").disabled = $("permission-mode").value === "chat";
+  const native = state.session?.platform && state.session.platform !== "opencode";
+  $("permission-mode").disabled = native;
+  $("status-commands").disabled = native || $("permission-mode").value === "chat";
+  $("native-access-note").hidden = !native;
+  $("opencode-policy-note").hidden = !!native;
+  $("save-permissions").disabled = native || !authorized || busy || !state.session;
   if ($("status-commands").disabled) $("status-commands").checked = false;
   $("refresh-models").disabled = busy || !authorized;
   $("wallpaper-mode").disabled = !authorized || busy;
@@ -188,11 +195,18 @@ function updateModelNote() {
     : "No compatible model is installed. Nothing will be downloaded automatically.";
   controls();
 }
+function platformName(id) { return platforms.find(p => p.id === id)?.name || id || "OpenCode"; }
 function targetChanged() {
   const target = platforms.find((p) => p.id === $("platform").value);
   $("platform-note").textContent =
     target?.reason || "Local Ollama models installed on this computer.";
-  $("model").disabled = !target?.available;
+  const native = target?.id !== "opencode";
+  const old = $("model").value;
+  $("model").replaceChildren(...(native ? [new Option("Use native configured model", "native")] : models.map(m=>new Option(m.name,m.name))));
+  if (!native && models.some(m=>m.name===old)) $("model").value=old;
+  $("model").disabled = native || !target?.available;
+  document.querySelector('label[for="model"]').textContent = native ? "Native model" : "Installed local model";
+  $("model-note").textContent = native ? "Uses this platform’s own model, provider, authentication and tools. Configure them in its native application." : "Select an installed Ollama model.";
   controls();
 }
 function renderMessages(messages) {
@@ -228,7 +242,7 @@ function renderMessages(messages) {
       const header = document.createElement("header");
       header.append(
         document.createTextNode(
-          message.role === "user" ? "You" : "Avalon · OpenCode",
+          message.role === "user" ? "You" : "Avalon · " + platformName(state.session?.platform),
         ),
         document.createElement("span"),
       );
@@ -266,7 +280,7 @@ function renderSessions() {
     const title = document.createElement("h3");
     title.textContent = session.title;
     const detail = document.createElement("p");
-    detail.textContent = `OpenCode / ${session.model} · ${new Date(session.created * 1000).toLocaleDateString()}`;
+    detail.textContent = `${platformName(session.platform)} / ${session.model} · ${new Date(session.created * 1000).toLocaleDateString()}`;
     info.append(title, detail);
     row.append(info);
     if (session.id === state.session?.id) {
@@ -316,9 +330,10 @@ function apply(data, force = false) {
   if (data.csrf) csrf = data.csrf;
   if (data.appearance) {
     const a = data.appearance;
+    $("constellation-settings").hidden = a.avatar !== "constellation";
     $("avatar-fallback").src = "/static/avatars/" + a.avatar + ".png";
     $("avatar-fallback").alt = a.avatar + " still avatar";
-    for (const button of document.querySelectorAll("[data-avatar]"))
+    for (const button of document.querySelectorAll("button[data-avatar]"))
       button.setAttribute(
         "aria-pressed",
         String(button.dataset.avatar === a.avatar),
@@ -339,10 +354,10 @@ function apply(data, force = false) {
   $("body-detail").textContent = state.detail;
   $("session-title").textContent = state.session?.title || "A new conversation";
   $("active-model").textContent = state.session
-    ? `OpenCode / ${state.session.model}`
+    ? `${platformName(state.session.platform)} / ${state.session.model}`
     : "No model connected";
   $("footer-target").textContent = state.session
-    ? `OpenCode / ${state.session.model}`
+    ? `${platformName(state.session.platform)} / ${state.session.model}`
     : "OpenCode + Ollama";
   $("turn-status").textContent = state.active_turn
     ? state.detail
@@ -353,7 +368,7 @@ function apply(data, force = false) {
     if (state.session) {
       if (models.some((m) => m.name === state.session.model))
         $("model").value = state.session.model;
-      $("platform").value = "opencode";
+      $("platform").value = state.session.platform || "opencode";
       $("permission-mode").value = state.session.mode;
       $("permission-title").value = state.session.title;
       $("status-commands").checked = !!state.session.commands;
@@ -712,6 +727,7 @@ async function initialize() {
     apply(data);
     await refreshModels();
     await refreshDevices();
+    if(data.appearance?.avatar==="constellation"){ $("constellation-settings").hidden=false; await refreshGalaxy(); }
     apply(data, true);
     $("access-note").hidden = true;
   } catch (error) {
@@ -731,10 +747,12 @@ async function initialize() {
 }
 initialize();
 
-for (const button of document.querySelectorAll("[data-avatar]"))
+for (const button of document.querySelectorAll("button[data-avatar]"))
   button.addEventListener("click", () =>
     action(async () => {
       apply(await api("/api/appearance", { avatar: button.dataset.avatar }));
+      $("constellation-settings").hidden=button.dataset.avatar!=="constellation";
+      if(button.dataset.avatar==="constellation")await refreshGalaxy();
       notice(
         "Avatar selected. Your model and session are unchanged.",
         "success",
@@ -767,3 +785,49 @@ function renderVoiceValues() {
   $("speed-value").textContent = `${Number($("voice-speed").value).toFixed(2)}×`;
 }
 for (const id of ["voice-pitch", "voice-speed"]) $(id).addEventListener("input", renderVoiceValues);
+
+
+async function refreshRobot() {
+  const robot=await api('/api/robot');
+  $('robot-status').textContent=robot.running ? 'Native LampOS services are running. Speech stays local.' : 'Native services are stopped. Start them to use music and Harness.';
+  if(robot.volume!=null && !document.querySelector('#volume-form:focus-within')){$('robot-volume').value=robot.volume;$('robot-volume-value').textContent=robot.volume+'%';}
+  const h=robot.harness;
+  $('harness-status').textContent=h.connected ? `Connected to ${h.machine_name || 'your Harness computer'}` : h.paired ? 'Paired · waiting for the Harness computer' : 'Not paired';
+  $('harness-pair').disabled=!robot.running || h.paired;
+  $('harness-agents').disabled=!h.connected;
+  $('music-status').textContent=robot.music?.playing ? `Playing ${robot.music.title || robot.music.query || 'music'}` : 'Music is stopped.';
+}
+$('robot-refresh').addEventListener('click',()=>action(refreshRobot));
+$('robot-start').addEventListener('click',()=>action(async()=>{await api('/api/robot',{action:'start'});await refreshRobot();}));
+$('harness-pair').addEventListener('click',()=>action(async()=>{
+  const pair=await api('/api/robot',{action:'pair'});
+  $('harness-code').hidden=false;$('harness-code').textContent=`Pairing code: ${pair.code}. Enter it in Harness within 60 seconds.`;
+  setTimeout(()=>{$('harness-code').hidden=true;$('harness-code').textContent='';},60000);
+}));
+$('harness-agents').addEventListener('click',()=>action(async()=>{
+  const data=await api('/api/robot',{action:'agents'});const list=$('harness-agent-list');list.replaceChildren();
+  for(const agent of data.agents || []) {const item=document.createElement('li');item.textContent=(agent.name || agent.agentId)+' — '+(agent.state || agent.status || 'state not reported');list.append(item);}
+  if(!data.agents?.length){const item=document.createElement('li');item.textContent='No agents are currently available in Harness.';list.append(item);}
+}));
+$('music-form').addEventListener('submit',event=>{event.preventDefault();action(async()=>{await api('/api/robot',{action:'music_play',query:$('music-query').value});$('music-status').textContent='Music requested. Resolving the selected track…';});});
+$('music-stop').addEventListener('click',()=>action(async()=>{await api('/api/robot',{action:'music_stop'});await refreshRobot();}));
+$('robot-volume').addEventListener('input',()=>{$('robot-volume-value').textContent=$('robot-volume').value+'%';});
+$('volume-form').addEventListener('submit',event=>{event.preventDefault();action(async()=>{const result=await api('/api/robot',{action:'volume',volume:Number($('robot-volume').value)});notice(`Selected speaker volume: ${result.volume}%`,'success');});});
+
+$('harness-open').addEventListener('click',()=>action(()=>api('/api/robot',{action:'open_harness'})));
+
+const galaxyFields={paused:['Pause galaxy motion','checkbox'],foreground:['Show custom foreground wallpaper','checkbox'],rotation_speed:['Galaxy rotation speed','number',0,5],glow:['Glow','number',0,1],rays:['Light rays','number',0,1],density:['Dust density','number',0,1],links:['Show links','checkbox'],labels:['Show labels','checkbox'],agent_mode:['Agent motion','select'],solar_rotation:['Rotate solar systems','checkbox'],solar_rotation_speed:['Solar rotation speed','number',0,10],solar_clockwise:['Clockwise solar rotation','checkbox'],write_lights:['Show write activity lights','checkbox'],black_hole_name:['Shared worker name','text']};
+async function refreshGalaxy(){
+ const data=await api('/api/constellation'),form=$('galaxy-form');form.replaceChildren();
+ for(const [key,[title,type,min,max]] of Object.entries(galaxyFields)){
+  const label=document.createElement('label');label.htmlFor='galaxy-'+key;label.textContent=title;
+  const field=document.createElement(type==='select'?'select':'input');field.id='galaxy-'+key;field.name=key;
+  if(type==='select')for(const name of ['orbiting','asteroid','satellite']){const option=document.createElement('option');option.value=name;option.textContent=name;field.append(option);}
+  else field.type=type;
+  if(type==='checkbox'){field.checked=data.settings[key];label.prepend(field);label.className='checkbox-label';form.append(label);}
+  else {field.value=data.settings[key];if(type==='number'){field.min=min;field.max=max;field.step='.01';}if(type==='text')field.maxLength=32;const group=document.createElement('div');group.append(label,field);form.append(group);}
+ }
+ const save=document.createElement('button');save.type='submit';save.className='primary';save.textContent='Apply galaxy settings';form.append(save);
+ $('galaxy-status').textContent=data.scene?'Using the local Constellation memory scene.':'No local Constellation memory scene yet. The procedural galaxy still animates.';
+}
+$('galaxy-form').addEventListener('submit',event=>{event.preventDefault();action(async()=>{const data={};for(const [key,[,type]] of Object.entries(galaxyFields)){const field=$('galaxy-'+key);data[key]=type==='checkbox'?field.checked:type==='number'?Number(field.value):field.value;}await api('/api/constellation',data);notice('Avalon galaxy settings saved.','success');});});

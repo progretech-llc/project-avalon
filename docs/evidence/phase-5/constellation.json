@@ -1,0 +1,11 @@
+{
+  "native_galaxy_renderer": true,
+  "gaze": [
+    0.5,
+    -0.5
+  ],
+  "speech_glow_above_idle": true,
+  "switching_releases_delegated_renderer": true,
+  "standalone_configuration_unchanged": true,
+  "isolated_shell_only": true
+}

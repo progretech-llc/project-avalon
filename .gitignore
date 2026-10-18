@@ -16,3 +16,5 @@ build/
 .cache/
 
 .media-venv/
+
+.lampos-venv/

@@ -1,0 +1,19 @@
+{
+  "appearance": {
+    "avatar": "mascot",
+    "quality": "high",
+    "fps": 30,
+    "motion": "full",
+    "idle_saver": true
+  },
+  "values": {
+    "time": 60.300868,
+    "aspect": 1.7777777777777777,
+    "state": 10,
+    "gaze_x": -0.5,
+    "gaze_y": 0.2,
+    "level": 0.6,
+    "avatar": 2,
+    "quality": 2
+  }
+}

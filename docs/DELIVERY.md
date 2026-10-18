@@ -19,3 +19,7 @@ Prove Ubuntu and wallpaper ownership before investing in avatar art. Establish r
 Record the commit, environment, commands/checks, observed results and remaining limitations. A screenshot cannot establish model integration, and a successful API probe cannot establish visual quality. Source research is not a runtime test. Explicitly carry a blocked gate forward; do not relabel it complete to fit the five-phase count.
 
 No completion dates are promised before the phase 1 runtime spike measures the LampOS Ubuntu port. The default OpenCode off-device path and native action permissions are known integration risks, not a reason to substitute Codex silently.
+
+## Current local robot and galaxy iteration
+
+Local Whisper/Kokoro remains selected. Native LampOS skills/music/Harness services are on demand with Avalon; install prerequisites and ports are in LAMPOS.md. Codex/Claude use native model/provider settings. Constellation is an optional independent Avalon appearance, not a replacement of the standalone app; details and normal-login module loading are in CONSTELLATION.md. Phase 5 retains the explicit live worker/provider and lifecycle gates in PHASE-5.md.

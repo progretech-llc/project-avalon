@@ -161,6 +161,35 @@ def create_app(controller=None, test_config=None):
     def connect():
         return jsonify(control.resume())
 
+    @app.get("/api/constellation")
+    @private
+    def constellation_state():
+        import constellation
+
+        return jsonify(
+            settings=constellation.settings(),
+            scene=constellation.scene(),
+            foreground=constellation.foreground() is not None,
+        )
+
+    @app.post("/api/constellation")
+    @private
+    def constellation_settings():
+        import constellation
+
+        return jsonify(settings=constellation.configure(request.get_json()))
+
+    @app.get("/api/constellation/foreground")
+    @private
+    def constellation_foreground():
+        import constellation
+        from flask import send_file, abort
+
+        path = constellation.foreground()
+        if path is None:
+            abort(404)
+        return send_file(path, mimetype="image/png", max_age=0)
+
     @app.post("/api/appearance")
     @private
     def appearance():
@@ -198,6 +227,66 @@ def create_app(controller=None, test_config=None):
         with control.lock:
             control.media.configure(request.get_json())
             return jsonify(control.snapshot())
+
+    @app.get("/api/robot")
+    @private
+    def robot_status():
+        import lampos
+
+        value = lampos.status()
+        try:
+            value["volume"] = lampos.output_volume(control.media.settings)["volume"]
+        except (OSError, ValueError, subprocess.SubprocessError):
+            pass
+        return jsonify(value)
+
+    @app.post("/api/robot/body")
+    @private
+    def robot_body_action():
+        import lampos
+
+        data = request.get_json()
+        if not isinstance(data, dict) or data.get("action") != "volume":
+            raise ValueError("Unknown digital body action")
+        return jsonify(lampos.output_volume(control.media.settings, data.get("volume")))
+
+    @app.post("/api/robot")
+    @private
+    def robot_action():
+        import lampos
+
+        data = request.get_json()
+        operation = data.get("action") if isinstance(data, dict) else None
+        if operation == "start":
+            return jsonify(lampos.start())
+        if operation == "pair":
+            return jsonify(lampos.request("/api/harness/pair", {}))
+        if operation == "open_harness":
+            subprocess.Popen(
+                ["gtk-launch", "progretech-harness"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            return jsonify(status="opened")
+        if operation == "agents":
+            return jsonify(
+                lampos.request("/api/harness/request", {"type": "agents.list"})
+            )
+        if operation == "music_play":
+            query = data.get("query")
+            if not isinstance(query, str) or not 1 <= len(query.strip()) <= 500:
+                raise ValueError("Enter a music search or local audio path")
+            return jsonify(
+                lampos.request("/audio/play", {"query": query.strip()}, hal=True)
+            )
+        if operation == "music_stop":
+            return jsonify(lampos.request("/audio/stop", {}, hal=True))
+        if operation == "volume":
+            return jsonify(
+                lampos.output_volume(control.media.settings, data.get("volume"))
+            )
+        raise ValueError("Unknown robot action")
 
     @app.post("/api/media")
     @private

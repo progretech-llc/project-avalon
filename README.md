@@ -14,3 +14,5 @@ An embodied digital robot for Ubuntu: a living wallpaper and Presence Control Ce
 The owner-supplied [concept image](wide_cinematic_poster_mockup_layout_of_a_desktop.png) is the visual target. The original [HTML concept/charter](ProgreTech_Presence_Concept_Charter.html) is preserved as historical reference; its Open WebUI, multiple-agent and simulated-interface assumptions are superseded by the specification.
 
 No phase is complete merely because its interface is drawn. Runtime states, device access, model selection, permissions and wallpaper exclusivity must pass their delivery gates.
+
+Native digital-body setup: [LampOS host](docs/LAMPOS.md). Independent galaxy mode: [Avalon Constellation appearance](docs/CONSTELLATION.md). Current qualification and remaining gates: [Phase 5](docs/PHASE-5.md).

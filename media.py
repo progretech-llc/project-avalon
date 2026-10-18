@@ -5,6 +5,7 @@ import base64
 import json
 import math
 import os
+import re
 import signal
 import select
 import subprocess
@@ -99,13 +100,18 @@ class Media:
             "spoken_replies": True,
             "listener_phrase": "hey avalon",
             "speaker_lock": True,
-            "followup_replies": False,
+            "followup_replies": True,
             **VOICE_DEFAULTS,
         }
         saved = controller.store.get("devices", {})
+        if not controller.store.get("engaged_voice_default_v1", False):
+            saved["followup_replies"] = True
+            controller.store.set("devices", saved)
+            controller.store.set("engaged_voice_default_v1", True)
         self.settings = {key: saved.get(key, value) for key, value in defaults.items()}
         if not saved:
             controller.store.set("devices", self.settings)
+        self._save_output_route()
         self.state = {
             "recording": False,
             "transcribing": False,
@@ -210,6 +216,14 @@ class Media:
                             bool(self.control.active or self.synthesis or self.player)
                         )
 
+    def _save_output_route(self):
+        from runtime_config import atomic_json
+
+        atomic_json(
+            self.control.state / "lampos/selected-audio.json",
+            {"output": self.settings["output"]},
+        )
+
     def configure(self, data):
         if not isinstance(data, dict) or set(data) - set(self.settings):
             raise ValueError("Unknown device setting")
@@ -249,6 +263,7 @@ class Media:
         self.stop()
         self.settings = candidate
         self.control.store.set("devices", candidate)
+        self._save_output_route()
         self._changed()
 
     def _unlocked(self):
@@ -587,7 +602,7 @@ class Media:
         ):
             raise ValueError("Enable a connected camera before asking about its view")
         current = self.control.store.session(self.control.selected)
-        model = self.control.catalog.validate(current["model"], current["mode"])
+        model = self.control.capabilities(current)
         if not model.get("vision"):
             raise ValueError(
                 "The selected model has no vision capability. Camera gaze still works; select an installed vision model to ask about images."
@@ -625,6 +640,10 @@ class Media:
         self._changed()
 
     def stop(self):
+        if (self.control.state / "lampos/config/config.json").exists():
+            from lampos import stop_music
+
+            stop_music()
         self.awake = False
         self.state["voice_owner"] = False
         self.listener_ready = False
@@ -644,9 +663,7 @@ class Media:
                 "Connect a vision model and finish its turn before waking Progre"
             )
         current = self.control.store.session(self.control.selected)
-        if not self.control.catalog.validate(current["model"], current["mode"]).get(
-            "vision"
-        ):
+        if not self.control.capabilities(current).get("vision"):
             raise ValueError("Select an installed vision model before waking Progre")
         if not self.snapshot()["speech_ready"]:
             raise ValueError("Install local voice components before waking Progre")
@@ -707,7 +724,9 @@ class Media:
                 if self.followup == float("inf"):
                     self.followup = time.monotonic() + 10
                 self.state["notice"] = (
-                    "Listening for “" + self.settings["listener_phrase"] + "”"
+                    "Listening for your follow-up…"
+                    if time.monotonic() < self.followup
+                    else "Listening for “" + self.settings["listener_phrase"] + "”"
                 )
             self._changed()
         except (BrokenPipeError, OSError):
@@ -752,6 +771,13 @@ class Media:
                         and event.get("owner_match") is not True
                     ):
                         continue
+                    command = " ".join(re.sub(r"[^\w\s]", "", text.casefold()).split())
+                    phrase = self.settings["listener_phrase"].casefold()
+                    if command.startswith(phrase + " "):
+                        command = command[len(phrase) :].strip()
+                    if command in ("go to sleep", "stop listening"):
+                        self.stop()
+                        return
                     self._pause_listener(True)
                     self.followup = (
                         float("inf")

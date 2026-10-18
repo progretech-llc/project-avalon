@@ -61,7 +61,18 @@ def permissions(workspace, mode, commands=False):
     return policy
 
 
-def configure(state, model, workspace=None, mode="chat", commands=False, vision=False):
+def configure(
+    state,
+    model,
+    workspace=None,
+    mode="chat",
+    commands=False,
+    vision=False,
+    platform="opencode",
+    robot_skills=False,
+):
+    if platform != "opencode":
+        return configure_native(state, platform, workspace)
     if type(vision) is not bool:
         raise ValueError("Invalid model vision capability")
     state = Path(state).resolve()
@@ -86,6 +97,22 @@ def configure(state, model, workspace=None, mode="chat", commands=False, vision=
         state / "agent-home/.local/state",
     ]:
         path.mkdir(parents=True, exist_ok=True, mode=0o700)
+    skill_root = Path(__file__).resolve().parent / ".runtime/lampos-source/skills"
+    if robot_skills and skill_root.is_dir():
+        policy["read"] = {
+            "*": "deny",
+            **(policy.get("read", {}) if isinstance(policy.get("read"), dict) else {}),
+            str(skill_root) + "/**": "allow",
+        }
+        policy["external_directory"] = {"*": "deny", str(skill_root) + "/**": "allow"}
+        policy["bash"] = {
+            "*": "deny",
+            **(policy.get("bash", {}) if isinstance(policy.get("bash"), dict) else {}),
+            "python3 "
+            + str(skill_root / "harness-use/scripts/harness.py")
+            + " *": "allow",
+            "curl *http://127.0.0.1:5001/audio/volume*": "allow",
+        }
     config = {
         "$schema": "https://opencode.ai/config.json",
         "model": f"ollama/{model}",
@@ -123,10 +150,37 @@ def configure(state, model, workspace=None, mode="chat", commands=False, vision=
     )
     gateway.update(
         binary=binary,
+        platform="opencode",
         model=model,
         workspace=str(workspace),
         permission_mode=mode,
         status_commands=commands,
+    )
+    atomic_json(path, gateway)
+    return gateway
+
+
+def configure_native(state, platform, workspace):
+    binary = shutil.which({"codex": "codex", "claudecode": "claude"}.get(platform, ""))
+    if not binary:
+        raise ValueError("Install and authenticate the selected native CLI first")
+    state = Path(state).resolve()
+    workspace = Path(workspace or state / "workspace").resolve()
+    workspace.mkdir(parents=True, exist_ok=True, mode=0o700)
+    (state / "attachments").mkdir(parents=True, exist_ok=True, mode=0o700)
+    path = state / "gateway.json"
+    gateway = (
+        json.loads(path.read_text())
+        if path.exists()
+        else {"token": secrets.token_urlsafe(48)}
+    )
+    gateway.update(
+        platform=platform,
+        binary=binary,
+        workspace=str(workspace),
+        model="native",
+        permission_mode="native",
+        status_commands=True,
     )
     atomic_json(path, gateway)
     return gateway

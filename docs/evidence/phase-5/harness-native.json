@@ -1,0 +1,22 @@
+{
+  "native_pairing_connected": true,
+  "real_agent_discovery": true,
+  "negotiated_capabilities": [
+    "agents.list",
+    "turn.send",
+    "turn.stop",
+    "status",
+    "recap",
+    "question.answer",
+    "receipt.get",
+    "store.list",
+    "store.inspect",
+    "agent.prepare",
+    "operation.get"
+  ],
+  "first_terminal_check": "rejected runtime_gone_pre_paste; confirmed not executed",
+  "monitor_check": "unknown not_submitted; retained by native receipt journal; not resent",
+  "correlated_final_result_from_live_agent": false,
+  "limit": "The existing selected Harness runtimes were stale/unavailable. Pairing/discovery and admission/error handling verified; a successful live remote result remains unverified.",
+  "private_receipt_keys_saved_in_git": false
+}

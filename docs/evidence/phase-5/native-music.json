@@ -1,0 +1,9 @@
+{
+  "source": "Authored one-second soft 440 Hz WAV; no recorded microphone content",
+  "native_audio_play_status": "ok",
+  "selected_output_monitor_samples": 35813,
+  "selected_output_monitor_rms": 565.63,
+  "signal_detected": true,
+  "monitor_audio_saved": false,
+  "online_search_qualified": false
+}

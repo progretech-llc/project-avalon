@@ -262,7 +262,7 @@ main {
   border: 1px solid #243240;
   border-radius: var(--radius);
 }
-#presence-canvas {
+#presence-canvas, .galaxy-preview {
   display: block;
   width: 100%;
   height: 100%;
@@ -802,7 +802,8 @@ body[data-status="switching"] .connection-label {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
   }
   .brand {
     margin: 0;
@@ -858,7 +859,7 @@ body[data-status="switching"] .connection-label {
     flex: auto;
     min-height: 460px;
   }
-  #presence-canvas {
+  #presence-canvas, .galaxy-preview {
     height: calc(100% - 128px);
   }
   .target-controls {
@@ -1158,3 +1159,10 @@ body[data-status="switching"] .connection-label {
 
 .device-form input[type="range"] { width: 100%; accent-color: var(--cyan); }
 .device-form output { float: right; font-size: .85rem; color: var(--cyan); }
+
+.robot-columns {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2rem;margin-top:2rem;max-width:960px;}
+.robot-columns section {min-width:0;border-top:1px solid var(--border);padding-top:1.2rem;}
+.robot-columns section:last-child {grid-column:1/-1;}
+.robot-columns form {display:grid;gap:.8rem;margin-block:1rem;}
+.robot-columns input {max-width:100%;min-width:0;}
+@media(max-width:700px){.robot-columns{grid-template-columns:minmax(0,1fr);}}

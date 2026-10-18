@@ -7,8 +7,8 @@
     <title>Project Avalon</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/static/icons/avalon-192.png" />
-    <link rel="stylesheet" href="/static/app.css?v=5.2" />
-    <script src="/static/app.js?v=5.2" type="module"></script>
+    <link rel="stylesheet" href="/static/app.css?v=5.5" />
+    <script src="/static/app.js?v=5.5" type="module"></script>
   </head>
   <body data-status="disconnected">
     <svg class="icon-defs" aria-hidden="true">
@@ -66,6 +66,7 @@
           <button class="nav-item" data-page="devices">
             <svg class="icon"><use href="#i-devices" /></svg>Devices
           </button>
+          <button class="nav-item" data-page="robot"><svg class="icon"><use href="#i-presence" /></svg>Robot</button>
           <button class="nav-item" data-page="sessions">
             <svg class="icon"><use href="#i-sessions" /></svg>Sessions
           </button>
@@ -268,6 +269,14 @@
           </div>
           <div id="session-list" class="session-list"></div>
         </section>
+        <section data-view="robot" class="robot-view" hidden>
+          <div class="view-intro"><h2>One voice, connected to your computer.</h2><p>Speech stays local. Your selected agent handles conversation; LampOS provides music and the paired Harness route.</p></div>
+          <div class="robot-columns">
+            <section><h3>Services</h3><p id="robot-status" role="status">Checking native services…</p><p class="field-note">Whisper and Kokoro run locally. Camera capture belongs to Devices. This digital robot has no motors or physical LEDs.</p><button id="robot-start" class="quiet">Start services</button><button id="robot-refresh" class="quiet">Refresh status</button></section>
+            <section><h3>Music and sound</h3><form id="music-form"><label for="music-query">Song, artist, genre or local audio path</label><input id="music-query" maxlength="500" placeholder="Evening jazz" required /><button type="submit" class="primary">Play</button><button id="music-stop" type="button" class="quiet">Stop music</button></form><p id="music-status" class="field-note" role="status">No playback requested.</p><form id="volume-form"><label for="robot-volume">Selected speaker volume <output id="robot-volume-value">30%</output></label><input id="robot-volume" type="range" min="0" max="100" step="1" value="30" /><button class="quiet" type="submit">Set volume</button></form></section>
+            <section><h3>Harness computer</h3><p id="harness-status" role="status">Checking connection…</p><p class="field-note">Use the existing agents and their native models. Ask Avalon to give a named agent a task. A confirmed final result can return here and be spoken while awake. Remote task completion is still being qualified; check delivery in Harness before retrying.</p><button id="harness-pair" class="quiet">Generate pairing code</button><button id="harness-agents" class="quiet">Refresh agents</button><button id="harness-open" class="quiet">Open Harness</button><p id="harness-code" class="field-note" role="status" hidden></p><ul id="harness-agent-list" class="activity-list" aria-label="Available Harness agents"></ul><p class="field-note">Pair in Harness → Settings → Devices. If an agent needs permission or structured input, resolve it in Harness. Pending work keeps its original target; it is never resent automatically.</p></section>
+          </div>
+        </section>
         <section data-view="permissions" class="permissions-view" hidden>
           <div class="view-intro">
             <h2>A clear boundary for every task.</h2>
@@ -282,7 +291,7 @@
               for="permission-mode"
               >Workspace access</label
             ><select id="permission-mode">
-              <option value="chat">Conversation only — no tools</option>
+              <option value="chat">Conversation + native robot skills</option>
               <option value="read">Read workspace — no changes</option>
               <option value="edit">Read and edit workspace files</option>
             </select>
@@ -297,10 +306,11 @@
                 ></span
               ></label
             >
-            <div class="policy-note">
+            <p id="native-access-note" class="field-note" hidden>Native platform tools and execution are enabled. Model, provider and authentication follow its native configuration. Avalon’s OpenCode workspace restrictions do not apply.</p>
+            <div id="opencode-policy-note" class="policy-note">
               <svg class="icon"><use href="#i-shield" /></svg>
               <p>
-                Other folders, web tools and additional agents remain denied.
+                Native LampOS robot skills and Harness delegation are allowed. Other folders and general web tools remain denied.
                 Camera and microphone are controlled separately in Devices.
               </p>
             </div>
@@ -399,7 +409,7 @@
             <section>
               <h3>Attention</h3>
               <label class="checkbox-label"><input id="speaker-lock" type="checkbox" checked /><span>Match the first addressed voice<small>One voice owns the awake session. The local signature stays in memory and is forgotten on sleep. Matching reduces accidental replies; it is not authentication.</small></span></label>
-              <label class="checkbox-label"><input id="followup-replies" type="checkbox" /><span>Allow ten-second follow-ups<small>Off by default so conversations with others need the listener phrase again. Follow-ups still require the same voice when matching is enabled.</small></span></label>
+              <label class="checkbox-label"><input id="followup-replies" type="checkbox" checked /><span>Allow ten-second follow-ups<small>Enabled by default. Each accepted turn renews the window after processing and speech finish. Follow-ups still require the same voice when matching is enabled.</small></span></label>
               <button id="reset-voice-owner" type="button" class="quiet">Reset voice owner</button>
               <p id="voice-owner-status" class="field-note" role="status">No session voice yet.</p>
             </section>
@@ -485,7 +495,13 @@
                 >Abstract Core<small>Orbital light · pure motion</small></span
               >
             </button>
+            <button class="avatar-option" data-avatar="constellation" aria-pressed="false"><img src="/static/avatars/constellation.png" alt="" /><span>Constellation<small>Your galaxy · voice and vision</small></span></button>
           </div>
+          <section id="constellation-settings" hidden>
+            <h3>Your Avalon galaxy</h3><p class="field-note">Separate from the Constellation app. Its existing memory scene and custom foreground are read locally. Voice pulses the galaxy; camera attention moves its axis. Folder and memory clicks work on the desktop wallpaper; this panel is a visual preview. A new login loads this mode in GNOME if Avalon was already loaded.</p>
+            <form id="galaxy-form" class="device-form"></form>
+            <p id="galaxy-status" role="status" class="field-note"></p>
+          </section>
           <form id="appearance-form" class="render-settings">
             <div>
               <label for="render-quality">Detail</label

@@ -8,6 +8,7 @@ import St from "gi://St";
 import Meta from "gi://Meta";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { Extension } from "resource:///org/gnome/shell/extensions/extension.js";
+import { createConstellation } from "./constellation-presence.js";
 import { claimWallpaper } from "./ownership.js";
 
 let source = "";
@@ -25,7 +26,7 @@ const STATES = {
   speaking: 10,
   approval: 11,
 };
-const AVATARS = { ethereal: 0, sentinel: 1, mascot: 2, abstract: 3 };
+const AVATARS = { constellation: 4, ethereal: 0, sentinel: 1, mascot: 2, abstract: 3 };
 const LABELS = [
   "Disconnected",
   "Ready",
@@ -260,6 +261,13 @@ export default class Avalon extends Extension {
       this._dirty = true;
       return;
     }
+    if (this._appearance.avatar === "constellation") {
+      if (!this._galaxy) this._galaxy = createConstellation(this);
+      this._galaxy._presence();
+      for (const area of this._areas) area.visible = false;
+      return;
+    }
+    if (this._galaxy) { this._galaxy.disable(); this._galaxy = null; for (const area of this._areas) area.visible = visible; }
     const still =
       this._appearance.motion === "reduced" ||
       (this._appearance.motion === "system" && !this._systemMotion);
@@ -384,6 +392,8 @@ export default class Avalon extends Extension {
     button.visible = !Main.overview.visible && !Main.screenShield.locked && !covered;
   }
   disable() {
+    this._galaxy?.disable();
+    this._galaxy = null;
     if (this._wakeButton) {
       Main.layoutManager.removeChrome(this._wakeButton);
       this._wakeButton.destroy();

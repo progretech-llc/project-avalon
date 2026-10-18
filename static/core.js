@@ -16,7 +16,7 @@ const states = {
 };
 const avatars = { ethereal: 0, sentinel: 1, mascot: 2, abstract: 3 };
 let sharedSource;
-export function mountCore(canvas) {
+function mountPresence(canvas) {
   const gl = canvas.getContext("webgl", {
     alpha: false,
     antialias: false,
@@ -99,7 +99,7 @@ export function mountCore(canvas) {
   let locations;
   function draw(now) {
     frame = requestAnimationFrame(draw);
-    if (!program || document.hidden || !visible) return;
+    if (!program || document.hidden || !visible || appearance.avatar === "constellation") return;
     const still =
       appearance.motion === "reduced" ||
       (appearance.motion === "system" && reduced.matches);
@@ -148,7 +148,7 @@ export function mountCore(canvas) {
       new CustomEvent("avatar-error", { detail: error.message }),
     );
   }
-  sharedSource ??= fetch("/static/presence.glsl?v=5.2").then((r) => {
+  sharedSource ??= fetch("/static/presence.glsl?v=5.5").then((r) => {
     if (!r.ok) throw Error("Avatar shader is unavailable");
     return r.text();
   });
@@ -191,4 +191,15 @@ export function mountCore(canvas) {
       dirty = true;
     }
   };
+}
+
+export function mountCore(canvas) {
+  const setPresence=mountPresence(canvas);
+  const galaxy=document.createElement('canvas');
+  galaxy.className='galaxy-preview';galaxy.style.cssText=canvas.style.cssText;galaxy.hidden=true;
+  galaxy.setAttribute('aria-label','Live Constellation appearance preview');
+  canvas.after(galaxy);
+  let update=null,latest=null;
+  import('./constellation-core.js').then(module=>{update=module.mountConstellation(galaxy);if(latest)update(...latest);});
+  return (value,settings,input)=>{latest=[value,settings,input];setPresence(value,settings,input);canvas.style.visibility=settings?.avatar==='constellation'?'hidden':'';update?.(value,settings,input);};
 }

@@ -1,0 +1,9 @@
+{
+  "native_pairing_connected": true,
+  "first_test_existing_terminal_agent_rejected": true,
+  "receipt_state": "rejected",
+  "code": "runtime_gone_pre_paste",
+  "task_executed": false,
+  "automatically_resent": false,
+  "next_qualification": "Separate check on a ready Harness Monitor agent; original delivery remains rejected"
+}

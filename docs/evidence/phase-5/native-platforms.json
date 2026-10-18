@@ -1,0 +1,10 @@
+{
+  "codex": {
+    "real_native_reply": true,
+    "seconds": 5.21
+  },
+  "claudecode": {
+    "real_native_reply": false,
+    "error": "The selected agent is working on your message"
+  }
+}

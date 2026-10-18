@@ -18,6 +18,7 @@ from pathlib import Path
 from websockets.sync.client import connect
 
 from runtime_config import atomic_json, configure
+from native_bridge import NativeSocket
 
 ROOT = Path(__file__).resolve().parent
 RUNTIME_SERVICE = "project-avalon-runtime.service"
@@ -140,15 +141,15 @@ class Catalog:
                 "id": "codex",
                 "name": "Codex",
                 "installed": bool(shutil.which("codex")),
-                "available": False,
-                "reason": "The pinned LampOS Codex bridge requests unrestricted execution. Avalon is withholding it until its action restrictions and cancellation are qualified.",
+                "available": bool(shutil.which("codex")),
+                "reason": "Native Codex model, authentication and tools. Configure them in Codex.",
             },
             {
                 "id": "claudecode",
                 "name": "Claude Code",
                 "installed": bool(shutil.which("claude")),
-                "available": False,
-                "reason": "The pinned LampOS Claude bridge bypasses native approvals. A restricted connection and native authentication must be qualified before activation.",
+                "available": bool(shutil.which("claude")),
+                "reason": "Native Claude Code model, authentication and tools. Configure them in Claude Code.",
             },
             {
                 "id": "hermes",
@@ -174,6 +175,11 @@ class Store:
             db.execute(
                 "UPDATE messages SET status='interrupted' WHERE status='streaming'"
             )
+            columns = {row[1] for row in db.execute("PRAGMA table_info(sessions)")}
+            if "platform" not in columns:
+                db.execute(
+                    "ALTER TABLE sessions ADD COLUMN platform TEXT NOT NULL DEFAULT 'opencode'"
+                )
         os.chmod(self.path, 0o600)
 
     @contextmanager
@@ -211,17 +217,23 @@ class Store:
             return [
                 dict(r)
                 for r in db.execute(
-                    "SELECT id,title,model,workspace,mode,commands,created FROM sessions ORDER BY created DESC"
+                    "SELECT id,title,model,workspace,mode,commands,created,platform FROM sessions ORDER BY created DESC"
                 )
             ]
 
     def create_session(
-        self, model, workspace, mode="chat", commands=False, title="New conversation"
+        self,
+        model,
+        workspace,
+        mode="chat",
+        commands=False,
+        title="New conversation",
+        platform="opencode",
     ):
         identifier = uuid.uuid4().hex
         with self.db() as db:
             db.execute(
-                "INSERT INTO sessions VALUES(?,?,?,?,?,?,NULL,?)",
+                "INSERT INTO sessions(id,title,model,workspace,mode,commands,native,created,platform) VALUES(?,?,?,?,?,?,NULL,?,?)",
                 (
                     identifier,
                     title,
@@ -230,6 +242,7 @@ class Store:
                     mode,
                     int(commands),
                     time.time(),
+                    platform,
                 ),
             )
         return identifier
@@ -323,12 +336,17 @@ class Runtime:
             raise Unavailable(
                 "Local gateway could not start. Reinstall the Avalon user service and retry."
             )
-        token = json.loads((self.state / "gateway.json").read_text())["token"]
+        config = json.loads((self.state / "gateway.json").read_text())
+        token = config["token"]
+        platform = config.get("platform", "opencode")
+        endpoint = {"opencode": "opencode", "codex": "codex", "claudecode": "claude"}[
+            platform
+        ]
         deadline = time.monotonic() + 8
         while True:
             try:
                 ws = connect(
-                    "ws://127.0.0.1:18893/opencode/ws/",
+                    f"ws://127.0.0.1:18893/{endpoint}/ws/",
                     additional_headers={"Authorization": "Bearer " + token},
                     open_timeout=1,
                     close_timeout=1,
@@ -336,14 +354,13 @@ class Runtime:
                     proxy=None,
                 )
                 ready = json.loads(ws.recv(timeout=3))
-                if (
-                    ready.get("type") != "bridge.status"
-                    or ready.get("state") != "ready"
+                if ready.get("type") != "bridge.status" or (
+                    platform == "opencode" and ready.get("state") != "ready"
                 ):
                     ws.close()
                     raise Unavailable("The selected gateway is not ready")
-                self.ws = ws
-                return ws
+                self.ws = NativeSocket(ws, platform) if platform != "opencode" else ws
+                return self.ws
             except Exception:
                 if time.monotonic() > deadline:
                     raise Unavailable("The local gateway did not become ready")
@@ -356,7 +373,10 @@ class Runtime:
         raw = path.read_text()
         data = json.loads(raw)
         return (
-            raw if isinstance(data.get("session_id"), str) and len(raw) < 4096 else None
+            raw
+            if isinstance(data.get("session_id") or data.get("thread_id"), str)
+            and len(raw) < 4096
+            else None
         )
 
     def restore(self, raw):
@@ -425,7 +445,9 @@ class Controller:
                 "status": self.visible_status(),
                 "sensors": self.visual_sensors(),
                 "awake": bool(self.media and getattr(self.media, "awake", False)),
-                "platform": "opencode",
+                "platform": current.get("platform", "opencode")
+                if current
+                else "opencode",
                 "model": current["model"] if current else "",
                 "session": self.selected,
                 "generation": self.generation,
@@ -512,6 +534,7 @@ class Controller:
                 "sentinel",
                 "mascot",
                 "abstract",
+                "constellation",
             ):
                 raise ValueError("Choose an available avatar")
             if candidate["quality"] not in ("economy", "balanced", "high"):
@@ -555,7 +578,11 @@ class Controller:
     def select(self, data):
         if not isinstance(data, dict):
             raise ValueError("Expected an object")
-        platform = data.get("platform", "opencode")
+        identifier = data.get("session_id")
+        existing = self.store.session(identifier) if identifier else None
+        platform = (
+            existing["platform"] if existing else data.get("platform", "opencode")
+        )
         target = next(
             (p for p in self.catalog.platforms() if p["id"] == platform), None
         )
@@ -570,7 +597,11 @@ class Controller:
         model = (
             existing["model"]
             if existing
-            else data.get("model") or self.catalog.choose()
+            else (
+                (data.get("model") or self.catalog.choose())
+                if platform == "opencode"
+                else "native"
+            )
         )
         mode = data.get("mode", existing["mode"] if existing else "chat")
         commands = data.get(
@@ -580,7 +611,9 @@ class Controller:
             raise ValueError("Choose a valid permission policy")
         if commands and mode == "chat":
             raise ValueError("Enable workspace access before allowing status commands")
-        capabilities = self.catalog.validate(model, mode)
+        capabilities = self.capabilities(
+            {"model": model, "mode": mode, "platform": platform}
+        )
         if existing:
             workspace = Path(existing["workspace"])
         elif data.get("workspace"):
@@ -607,7 +640,7 @@ class Controller:
                 self._stop("Cancelled by session/model switch")
                 if not existing:
                     identifier = self.store.create_session(
-                        model, workspace, mode, commands, title.strip()
+                        model, workspace, mode, commands, title.strip(), platform
                     )
                     existing = self.store.session(identifier)
                 else:
@@ -619,12 +652,14 @@ class Controller:
                     mode,
                     commands,
                     vision=bool(capabilities.get("vision")),
+                    platform=platform,
+                    robot_skills=True,
                 )
                 self.runtime.restore(existing["native"])
                 self.selected = identifier
                 self.store.set("active_session", identifier)
                 self.ws = self.runtime.start()
-                self.set_status("idle", "OpenCode connected to " + model)
+                self.set_status("idle", target["name"] + " connected to " + model)
             except Exception:
                 self.set_status(
                     "disconnected",
@@ -632,6 +667,11 @@ class Controller:
                 )
                 raise
             return self.snapshot()
+
+    def capabilities(self, current):
+        if current.get("platform", "opencode") != "opencode":
+            return {"vision": True, "tools": True}
+        return self.catalog.validate(current["model"], current["mode"])
 
     def resume(self):
         return (
@@ -683,9 +723,10 @@ class Controller:
                 "text": "",
                 "session": self.selected,
                 "spoken": spoken,
+                "media_epoch": self.media.epoch if self.media else None,
             }
             self.active = job
-            self.set_status("working", "OpenCode is working on your message")
+            self.set_status("working", "The selected agent is working on your message")
             try:
                 self.ws.send(
                     json.dumps(
@@ -708,8 +749,11 @@ class Controller:
                                 + (
                                     "\n\nAvalon desktop action protocol: if the user asks you to open this conversation workspace folder, propose it by writing exactly [[avalon:open_workspace]] on a line by itself. This only requests user approval; do not use shell tools to open anything. No other desktop actions are supported."
                                     if self.desktop_actions
+                                    and self.store.session(self.selected)["platform"]
+                                    == "opencode"
                                     else ""
-                                ),
+                                )
+                                + self.robot_instructions(identifier),
                                 "attachments": attachments,
                             },
                         }
@@ -728,6 +772,94 @@ class Controller:
                 target=self._read_turn, args=(job, self.ws), daemon=True
             ).start()
             return identifier
+
+    def robot_instructions(self, identifier):
+        instructions = ROOT / "resources/robot-instructions.md"
+        skills = ROOT / ".runtime/lampos-source/skills"
+        if not instructions.exists() or not skills.is_dir():
+            return ""
+        return (
+            "\n\n"
+            + instructions.read_text()
+            + "\nAVALON_LAMPOS_SKILLS="
+            + str(skills)
+            + "\n[harness-reply run_id="
+            + identifier
+            + " channel=web]"
+        )
+
+    def _speak_reply(self, job, text):
+        if (
+            self.media
+            and job.get("media_epoch") == self.media.epoch
+            and (job.get("spoken") or self.media.awake)
+            and self.media.settings["spoken_replies"]
+            and not self.pending_action
+        ):
+            try:
+                self.media.speak(text)
+            except ValueError as exc:
+                self.media.state["notice"] = str(exc)
+                self.publish()
+
+    def _wait_harness(self, job):
+        import lampos
+
+        deadline = time.monotonic() + 1800
+        next_receipt = 0.0
+        while time.monotonic() < deadline:
+            with self.lock:
+                if self.active is not job or job["generation"] != self.generation:
+                    return
+            try:
+                result = lampos.harness_result(job["id"])
+            except (OSError, ValueError, KeyError):
+                result = None
+            if result is None and time.monotonic() >= next_receipt:
+                next_receipt = time.monotonic() + 2
+                try:
+                    receipt = lampos.harness_delivery(job["id"])
+                    if receipt and receipt.get("state") == "unknown":
+                        with self.lock:
+                            if self.active is job:
+                                self.set_status(
+                                    "working",
+                                    "Harness delivery is unconfirmed; check Harness before retrying",
+                                )
+                    if receipt and receipt.get("state") == "rejected":
+                        with self.lock:
+                            if self.active is job:
+                                text = "Harness rejected this input before it ran. Open Harness to check the agent. The task was not resent."
+                                self.store.replace_message(
+                                    job["message_id"], text, "failed"
+                                )
+                                self.active = None
+                                self.set_status("failed", text)
+                        return
+                except (OSError, ValueError):
+                    pass
+            if result is not None:
+                with self.lock:
+                    if self.active is not job or job["generation"] != self.generation:
+                        return
+                    job["text"] = result
+                    self.store.replace_message(job["message_id"], result, "complete")
+                    self.active = None
+                    self.set_status("completed", "Harness result received")
+                    self._speak_reply(job, result)
+                return
+            time.sleep(0.3)
+        with self.lock:
+            if self.active is job:
+                self.store.replace_message(
+                    job["message_id"],
+                    "Harness is still working. Check its task in Harness before sending it again.",
+                    "interrupted",
+                )
+                self.active = None
+                self.set_status(
+                    "idle", "Harness task remains owned by Harness; it was not resent"
+                )
 
     def _read_turn(self, job, ws):
         try:
@@ -774,12 +906,40 @@ class Controller:
                                 if name in ("write", "edit", "patch", "apply_patch")
                                 else "executing"
                             )
-                            self.set_status(state, "OpenCode tool: " + name)
+                            self.set_status(state, "Agent tool: " + name)
                         else:
                             self.set_status(
-                                "working", "OpenCode tool " + name + ": " + tool_status
+                                "working", "Agent tool " + name + ": " + tool_status
                             )
                     elif kind == "session.idle":
+                        if job["text"].strip() == "NO_REPLY":
+                            import lampos
+
+                            if not lampos.harness_pending(job["id"]):
+                                self.store.replace_message(
+                                    job["message_id"], "", "complete"
+                                )
+                                self.active = None
+                                self.set_status("idle", "No spoken reply needed")
+                                return
+                            self.store.replace_message(
+                                job["message_id"],
+                                "Waiting for the delegated Harness result…",
+                                "streaming",
+                            )
+                            self.set_status(
+                                "working", "Harness is handling the delegated task"
+                            )
+                            threading.Thread(
+                                target=self._wait_harness, args=(job,), daemon=True
+                            ).start()
+                            return
+                        if "[HW:" in job["text"]:
+                            import lampos
+
+                            job["text"] = lampos.process_response(
+                                job["text"], job["id"]
+                            )
                         marker = r"(?m)^\[\[avalon:open_workspace\]\]$"
                         proposal = self.desktop_actions and re.search(
                             marker, job["text"]
@@ -814,20 +974,7 @@ class Controller:
                                 "Open workspace requested; waiting for your approval",
                             )
                         self.set_status("completed", "Response completed")
-                        if (
-                            (
-                                job.get("spoken")
-                                or (self.media and getattr(self.media, "awake", False))
-                            )
-                            and self.media
-                            and self.media.settings["spoken_replies"]
-                            and not self.pending_action
-                        ):
-                            try:
-                                self.media.speak(job["text"])
-                            except ValueError as exc:
-                                self.media.state["notice"] = str(exc)
-                                self.publish()
+                        self._speak_reply(job, job["text"])
                         timer = threading.Timer(
                             2, self._settle, args=(job["generation"],)
                         )

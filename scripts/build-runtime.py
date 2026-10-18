@@ -37,8 +37,9 @@ def main():
         with tarfile.open(archive) as t:t.extractall(tools,filter='data')
         archive.unlink()
     run(str(go),'mod','verify')
-    for name in ['avalon-runtime','avalon-probe']:
+    for name in ['avalon-runtime','avalon-probe','avalon-harness-link']:
         run(str(go),'build','-mod=readonly','-o',str(tools/name),'./cmd/'+name)
+    run(str(go),'build','-mod=readonly','-o',str(tools/'lampos-os-server'),'go.autonomous.ai/os/system/cmd/os-server')
     print('Built pinned LampOS host and probe. No user services or agent settings changed.')
 
 if __name__=='__main__':main()
