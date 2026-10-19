@@ -148,7 +148,7 @@ function mountPresence(canvas) {
       new CustomEvent("avatar-error", { detail: error.message }),
     );
   }
-  sharedSource ??= fetch("/static/presence.glsl?v=5.5").then((r) => {
+  sharedSource ??= fetch("/static/presence.glsl?v=5.7").then((r) => {
     if (!r.ok) throw Error("Avatar shader is unavailable");
     return r.text();
   });

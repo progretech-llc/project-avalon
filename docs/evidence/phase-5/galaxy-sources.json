@@ -1,0 +1,30 @@
+{
+  "python_tests": 72,
+  "live_browser": {
+    "hide_all": true,
+    "automatic_current_selection": true,
+    "folder_add_and_bounded_collection": true,
+    "stale_revision_rejected": true,
+    "preferences_restored": true,
+    "selected_session_preserved": true,
+    "standalone_configuration_unchanged": true,
+    "obsolete_historical_identity_hidden": true
+  },
+  "layout": {
+    "desktop": true,
+    "mobile": true,
+    "fresh_review": "ship"
+  },
+  "native": {
+    "isolated_compositor": true,
+    "synthetic_state": true,
+    "reads_avalon_owned_scene": true,
+    "hud_states": true,
+    "monitor_rebuild": true,
+    "exclusive_cleanup": true
+  },
+  "limits": [
+    "Physical folder chooser selection not qualified; typed folder selection passed",
+    "Existing login requires normal logout/login for imported native scene path"
+  ]
+}

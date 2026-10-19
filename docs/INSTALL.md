@@ -65,7 +65,7 @@ It installs a separate Python 3.12 media environment and downloads pinned suppor
 python3 scripts/install-control-center.py
 ```
 
-The installer adds the **Project Avalon** application-menu/Desktop shortcut, on-demand user services and GNOME extension. It also updates the shared wallpaper guard in a sibling `constellation` checkout when present. Standalone Constellation is optional: Avalon's galaxy can animate without its scene export; populated memory navigation and the existing custom foreground require that separate app's data. Avalon does not install Constellation's collectors or change its settings.
+The installer adds the **Project Avalon** application-menu/Desktop shortcut, on-demand user services and GNOME extension. It also updates the shared wallpaper guard in a sibling `constellation` checkout when present. Standalone Constellation is optional: Avalon's galaxy can animate without its scene export; populated memory navigation and the existing custom foreground require that separate app's data. Avalon does not install Constellation's collectors or change its settings. Full agent/folder refresh requires that sibling checkout, its configured sources and working `.venv/bin/python` environment. Avalon invokes the native collector into its own private output; the standalone app and timer need not run. See [galaxy source controls](CONSTELLATION.md#agents-and-folders).
 
 Log out and back in normally to load newly installed GNOME JavaScript. Open **Project Avalon** from the application menu or Desktop. In the panel:
 

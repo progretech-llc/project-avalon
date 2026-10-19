@@ -26,3 +26,15 @@ The independent Your Avalon galaxy form reuses Devices’ native labeled fields,
 Evidence: constellation.py, static/constellation-core.js, static/galaxy.js, static/app.js, templates/index.html, gnome-extension/constellation-presence.js and gnome-extension/constellation-wallpaper.js. The scoped reuse preserves renderer provenance; no new concept roll or historical seed is claimed.
 
 The galaxy reuses the native left-side Avalon/status overlay with the existing typography and monitor visibility rules. Galaxy motion never carries the overlay with it. Sleeping reflects idle capture sleep; active task/listening/speech states keep their live labels.
+
+### Independent galaxy sources
+
+The source form extends the existing Appearance controls without changing the visual system. Galaxy appearance settings sit in a native disclosure; agents and folders follow as a separate section with a thin top border, textual status and wrapping quiet refresh/reload actions. Display choices belong to Avalon and do not start agents, grant file access or alter standalone Constellation. The explanatory copy distinguishes reviewed-memory paths from folder-content scanning.
+
+Displayed agents use native checkboxes and flat ruled rows. Automatic mode selects current configured identities; an explicit checkbox choice turns Automatic off. Current metadata is described as configuration, not proof of a running agent. Historical identities remain in a separate counted disclosure with their historical status explained. Names and supporting source descriptions wrap rather than widening the page. Select current and Hide all agents are quiet actions.
+
+Folder systems expose separate System name and Absolute folder path labels plus a quiet Remove action. Up to 12 rows are supported; removing a row changes the display selection and leaves files untouched. Add folder path and Choose folder reuse quiet buttons. Remembered-file and subfolder limits use labeled numeric fields, followed by a native memory-system checkbox and the primary Apply agents and folders action. Previously saved offline folders may remain selected.
+
+The source region is capped at 960px. Desktop folder rows place name, path and removal in three columns with 12px gaps; limit fields use two columns with 20px gaps. At 700px both become one column, with ruled separation between folder rows and removal aligned to the start. Existing dark fields, Ubuntu typography, cyan focus and primary actions remain the visual authority; this extension introduces no palette or type tokens.
+
+Evidence: inspected templates/index.html, static/app.css and static/app.js; opened .impeccable/review/galaxy-agents-desktop.png and galaxy-folders-mobile.png. Captures establish the source hierarchy, flat checkbox rows and stacked folder fields; state transitions and selection semantics are source-grounded. Existing unrelated token extraction drift remains outside this extension. DESIGN.md and .impeccable/design.json retain the incumbent system unchanged.

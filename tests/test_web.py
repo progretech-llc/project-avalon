@@ -172,6 +172,43 @@ class WebTest(unittest.TestCase):
         )
         self.assertEqual(r.status_code, 413)
 
+    def test_galaxy_sources_require_auth_and_csrf(self):
+        manager = self.app.extensions["galaxy_sources"]
+        with (
+            patch.object(manager, "snapshot") as snapshot,
+            patch.object(manager, "request_refresh") as refresh,
+        ):
+            self.assertEqual(
+                self.client.get(
+                    "/api/constellation/sources", base_url=ORIGIN
+                ).status_code,
+                401,
+            )
+            self.auth()
+            self.assertEqual(
+                self.client.post(
+                    "/api/constellation/sources",
+                    base_url=ORIGIN,
+                    json={"action": "refresh"},
+                    headers={"Origin": ORIGIN},
+                ).status_code,
+                403,
+            )
+            snapshot.assert_not_called()
+            refresh.assert_not_called()
+
+    def test_folder_picker_rejects_commands_and_caller_paths(self):
+        token = self.auth()
+        with patch("app.subprocess.run") as run:
+            response = self.client.post(
+                "/api/constellation/folder",
+                base_url=ORIGIN,
+                json={"command": "anything", "path": "/tmp"},
+                headers={"Origin": ORIGIN, "X-CSRF-Token": token},
+            )
+            self.assertEqual(response.status_code, 400)
+            run.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

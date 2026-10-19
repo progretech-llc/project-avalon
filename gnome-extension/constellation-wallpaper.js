@@ -9,7 +9,7 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {claimWallpaper} from './ownership.js';
 import {DEFAULT_SETTINGS, advancePhase, clickAction, hitTest, layoutScene, renderGalaxy} from './galaxy.js';
 
-const SCENE_PATH = GLib.build_filenamev([GLib.get_user_state_dir(), 'factory-observatory', 'scene.json']);
+const SCENE_PATH = GLib.build_filenamev([GLib.get_user_state_dir(), 'project-avalon', 'constellation-scene.json']);
 const CONFIG_PATH = GLib.build_filenamev([GLib.get_user_config_dir(), 'project-avalon', 'constellation.json']);
 const FOREGROUND_PATH = GLib.build_filenamev([GLib.get_user_data_dir(), 'constellation', 'foreground.png']);
 const LEGACY_FOREGROUND_PATH = GLib.build_filenamev([GLib.get_user_data_dir(), 'constellation', 'progre-foreground.png']);

@@ -7,8 +7,8 @@
     <title>Project Avalon</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/static/icons/avalon-192.png" />
-    <link rel="stylesheet" href="/static/app.css?v=5.5" />
-    <script src="/static/app.js?v=5.5" type="module"></script>
+    <link rel="stylesheet" href="/static/app.css?v=5.7" />
+    <script src="/static/app.js?v=5.7" type="module"></script>
   </head>
   <body data-status="disconnected">
     <svg class="icon-defs" aria-hidden="true">
@@ -498,9 +498,31 @@
             <button class="avatar-option" data-avatar="constellation" aria-pressed="false"><img src="/static/avatars/constellation.png" alt="" /><span>Constellation<small>Your galaxy · voice and vision</small></span></button>
           </div>
           <section id="constellation-settings" hidden>
-            <h3>Your Avalon galaxy</h3><p class="field-note">Separate from the Constellation app. Its existing memory scene and custom foreground are read locally. Voice pulses the galaxy; camera attention moves its axis. Folder and memory clicks work on the desktop wallpaper; this panel is a visual preview. A new login loads this mode in GNOME if Avalon was already loaded.</p>
-            <form id="galaxy-form" class="device-form"></form>
+            <h3>Your Avalon galaxy</h3><p class="field-note">Separate from the Constellation app. Its memory scene and custom foreground use local data. Agent and folder choices below belong to Avalon. Voice pulses the galaxy; camera attention moves its axis. Folder and memory clicks work on the desktop wallpaper; this panel is a visual preview. A new login loads this mode in GNOME if Avalon was already loaded.</p>
+            <details class="galaxy-look-settings"><summary>Galaxy appearance settings</summary><form id="galaxy-form" class="device-form"></form></details>
             <p id="galaxy-status" role="status" class="field-note"></p>
+            <section class="galaxy-sources" aria-labelledby="galaxy-sources-title">
+              <h3 id="galaxy-sources-title">Agents and folders in this galaxy</h3>
+              <p class="field-note">These are Avalon display choices. They do not start agents, grant file access or change the standalone Constellation app. Only paths mentioned in reviewed memory become stars; folder contents are not scanned.</p>
+              <p id="galaxy-source-status" class="field-note" role="status">Loading sources…</p>
+              <div class="source-actions"><button type="button" id="galaxy-scan" class="quiet" disabled>Refresh identities and scene</button><button type="button" id="galaxy-reload" class="quiet" disabled>Reload saved selections</button></div>
+              <form id="galaxy-sources-form" hidden>
+                <fieldset><legend>Displayed agents</legend>
+                  <label class="checkbox-label"><input id="galaxy-agents-auto" type="checkbox" /> Show current configured identities automatically</label>
+                  <p class="field-note">Configured locally means an identity was found in current client/profile metadata. It is not proof of a running agent.</p>
+                  <div id="galaxy-current-agents" class="galaxy-agent-list"></div>
+                  <details id="galaxy-history"><summary id="galaxy-history-title">Historical identities</summary><p class="field-note">Saved or recorded names not found in current local identity metadata. Hidden by Automatic mode; select one only if you want its historical node displayed.</p><div id="galaxy-historical-agents" class="galaxy-agent-list"></div></details>
+                  <div class="source-actions"><button id="galaxy-agents-current" type="button" class="quiet">Select current</button><button id="galaxy-agents-none" type="button" class="quiet">Hide all agents</button></div>
+                </fieldset>
+                <fieldset><legend>Folders as solar systems</legend><p class="field-note">Add up to 12 folders. Rename or remove a system here; files and folders stay untouched. Previously saved offline folders can remain selected.</p>
+                  <div id="galaxy-root-list"></div>
+                  <div class="source-actions"><button id="galaxy-root-add" type="button" class="quiet">Add folder path</button><button id="galaxy-root-browse" type="button" class="quiet">Choose folder…</button></div>
+                  <div class="source-limits"><div><label for="galaxy-max-files">Remembered files · maximum</label><input id="galaxy-max-files" type="number" min="1" max="1000" required /></div><div><label for="galaxy-max-directories">Remembered subfolders · maximum</label><input id="galaxy-max-directories" type="number" min="1" max="200" required /></div></div>
+                  <label class="checkbox-label"><input id="galaxy-show-memory" type="checkbox" /> Show the memory system and memory planets</label>
+                </fieldset>
+                <button type="submit" class="primary" id="galaxy-source-save">Apply agents and folders</button>
+              </form>
+            </section>
           </section>
           <form id="appearance-form" class="render-settings">
             <div>

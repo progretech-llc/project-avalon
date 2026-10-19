@@ -1,4 +1,4 @@
-import { mountCore } from "./core.js?v=5.5";
+import { mountCore } from "./core.js?v=5.7";
 const $ = (id) => document.getElementById(id);
 let csrf = "",
   authorized = false,
@@ -101,6 +101,7 @@ function page(name) {
   if (name === "robot" && authorized) action(refreshRobot);
 }
 function controls() {
+  if (galaxySources) syncGalaxySourceControls(galaxySources);
   for (const button of document.querySelectorAll("button[data-avatar]"))
     button.disabled = !authorized || busy;
   $("save-appearance").disabled = !authorized || busy;
@@ -828,6 +829,73 @@ async function refreshGalaxy(){
   else {field.value=data.settings[key];if(type==='number'){field.min=min;field.max=max;field.step='.01';}if(type==='text')field.maxLength=32;const group=document.createElement('div');group.append(label,field);form.append(group);}
  }
  const save=document.createElement('button');save.type='submit';save.className='primary';save.textContent='Apply galaxy settings';form.append(save);
- $('galaxy-status').textContent=data.scene?'Using the local Constellation memory scene.':'No local Constellation memory scene yet. The procedural galaxy still animates.';
+ $('galaxy-status').textContent=data.scene?'Using the Avalon memory scene.':'No Avalon memory scene yet. The procedural galaxy still animates.';
+ await refreshGalaxySources();
 }
 $('galaxy-form').addEventListener('submit',event=>{event.preventDefault();action(async()=>{const data={};for(const [key,[,type]] of Object.entries(galaxyFields)){const field=$('galaxy-'+key);data[key]=type==='checkbox'?field.checked:type==='number'?Number(field.value):field.value;}await api('/api/constellation',data);notice('Avalon galaxy settings saved.','success');});});
+
+let galaxySources=null, galaxySourcesDirty=false, galaxySourcesTimer=null, galaxyRootSequence=0;
+function syncGalaxySourceControls(data) {
+  $('galaxy-reload').disabled=!authorized||busy;
+  $('galaxy-source-save').disabled=!authorized||busy||!data.settings.roots.length;
+  $('galaxy-scan').disabled=!authorized||busy||data.busy;
+  const full=$('galaxy-root-list').children.length>=12;
+  $('galaxy-root-add').disabled=!authorized||busy||full||!data.collector_available;
+  $('galaxy-root-browse').disabled=!authorized||busy||full||!data.collector_available;
+}
+function galaxySourceNotice(data) {
+  $('galaxy-source-status').textContent=(data.busy?'Refreshing… ':'')+data.notice;
+  syncGalaxySourceControls(data);
+}
+function galaxyRootRow(root={label:'',path:''}) {
+  const list=$('galaxy-root-list');if(list.children.length>=12){notice('Choose at most 12 folders.');return;}
+  const row=document.createElement('div');row.className='galaxy-root-row';const id=++galaxyRootSequence;
+  for(const [key,title] of [['label','System name'],['path','Absolute folder path']]){
+    const group=document.createElement('div'),label=document.createElement('label'),field=document.createElement('input');
+    label.htmlFor=`galaxy-root-${id}-${key}`;label.textContent=title;field.id=label.htmlFor;field.dataset.rootField=key;field.value=root[key];field.required=true;
+    if(key==='label')field.maxLength=80;else field.placeholder='/path/to/your/folder';
+    group.append(label,field);row.append(group);
+  }
+  const remove=document.createElement('button');remove.type='button';remove.className='quiet';remove.textContent='Remove';remove.setAttribute('aria-label','Remove '+(root.label||'this folder')+' from the galaxy');
+  remove.addEventListener('click',()=>{row.remove();galaxySourcesDirty=true;galaxySourceNotice(galaxySources);});row.append(remove);list.append(row);
+}
+function renderGalaxySources(data) {
+  galaxySources=data;galaxySourcesDirty=false;$('galaxy-sources-form').hidden=false;
+  $('galaxy-agents-auto').checked=data.settings.display_agents===null;
+  $('galaxy-current-agents').replaceChildren();$('galaxy-historical-agents').replaceChildren();
+  for(const item of data.agents){
+    const label=document.createElement('label');label.className='galaxy-agent-option';
+    const check=document.createElement('input');check.type='checkbox';check.value=item.id;check.checked=item.selected;check.dataset.agentIdentity='';check.dataset.current=String(item.current);
+    check.addEventListener('change',()=>{$('galaxy-agents-auto').checked=false;galaxySourcesDirty=true;});
+    const text=document.createElement('span'),title=document.createElement('span'),detail=document.createElement('small');
+    title.textContent=item.name+' · '+item.id;detail.textContent=(item.current?'Configured locally':'Historical only')+' · '+item.sources.join('; ');text.append(title,detail);label.append(check,text);
+    $(item.current?'galaxy-current-agents':'galaxy-historical-agents').append(label);
+  }
+  if(!data.agents.some(x=>x.current)){const empty=document.createElement('p');empty.className='field-note';empty.textContent='No current named identities found. Refresh discovery or explicitly select a historical identity below.';$('galaxy-current-agents').append(empty);}
+  $('galaxy-history-title').textContent=`Historical identities (${data.agents.filter(x=>!x.current).length})`;
+  $('galaxy-root-list').replaceChildren();for(const root of data.settings.roots)galaxyRootRow(root);
+  $('galaxy-max-files').value=data.settings.max_files;$('galaxy-max-directories').value=data.settings.max_directories;$('galaxy-show-memory').checked=data.settings.show_memory;
+  galaxySourceNotice(data);
+}
+function watchGalaxySources(data) {
+  clearTimeout(galaxySourcesTimer);
+  if(data.busy)galaxySourcesTimer=setTimeout(async()=>{
+    try {const next=await api('/api/constellation/sources');if(!galaxySourcesDirty)renderGalaxySources(next);else galaxySourceNotice(next);watchGalaxySources(next);}
+    catch(error){$('galaxy-source-status').textContent=error.message;}
+  },1000);
+}
+async function refreshGalaxySources(){const data=await api('/api/constellation/sources');renderGalaxySources(data);watchGalaxySources(data);}
+$('galaxy-agents-auto').addEventListener('change',()=>{galaxySourcesDirty=true;if($('galaxy-agents-auto').checked)for(const field of document.querySelectorAll('[data-agent-identity]'))field.checked=field.dataset.current==='true';});
+$('galaxy-agents-current').addEventListener('click',()=>{$('galaxy-agents-auto').checked=false;for(const field of document.querySelectorAll('[data-agent-identity]'))field.checked=field.dataset.current==='true';galaxySourcesDirty=true;});
+$('galaxy-agents-none').addEventListener('click',()=>{$('galaxy-agents-auto').checked=false;for(const field of document.querySelectorAll('[data-agent-identity]'))field.checked=false;galaxySourcesDirty=true;});
+$('galaxy-root-add').addEventListener('click',()=>{galaxyRootRow();galaxySourcesDirty=true;galaxySourceNotice(galaxySources);});
+$('galaxy-root-browse').addEventListener('click',()=>action(async()=>{const result=await api('/api/constellation/folder',{});if(result.path){galaxyRootRow({label:result.path.split('/').filter(Boolean).at(-1)||'Root',path:result.path});galaxySourcesDirty=true;galaxySourceNotice(galaxySources);}}));
+$('galaxy-sources-form').addEventListener('input',()=>{galaxySourcesDirty=true;});
+$('galaxy-reload').addEventListener('click',()=>action(refreshGalaxySources));
+$('galaxy-scan').addEventListener('click',()=>action(async()=>{const data=await api('/api/constellation/sources',{action:'refresh'});galaxySourceNotice({...data,busy:true});watchGalaxySources({...data,busy:true});}));
+$('galaxy-sources-form').addEventListener('submit',event=>{event.preventDefault();action(async()=>{
+  const roots=Array.from($('galaxy-root-list').children,row=>Object.fromEntries(Array.from(row.querySelectorAll('[data-root-field]'),field=>[field.dataset.rootField,field.value])));
+  const selected=$('galaxy-agents-auto').checked?null:Array.from(document.querySelectorAll('[data-agent-identity]:checked'),field=>field.value);
+  const data=await api('/api/constellation/sources',{action:'save',revision:galaxySources.revision,settings:{roots,display_agents:selected,max_files:Number($('galaxy-max-files').value),max_directories:Number($('galaxy-max-directories').value),show_memory:$('galaxy-show-memory').checked}});
+  renderGalaxySources(data);watchGalaxySources({...data,busy:true});notice('Avalon agent and folder selection saved.','success');
+});});

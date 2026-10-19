@@ -10,9 +10,13 @@ CONFIG = (
     Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
     / "project-avalon/constellation.json"
 )
-SCENE = (
+SOURCE_SCENE = (
     Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
     / "factory-observatory/scene.json"
+)
+SCENE = (
+    Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
+    / "project-avalon/constellation-scene.json"
 )
 DATA = (
     Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))

@@ -23,7 +23,7 @@ Built by [ProgreTech LLC](https://github.com/progretech-llc) as an open-source s
 - **A model and session controller.** Choose an installed Ollama model for OpenCode, return to conversations, or select a native Codex/Claude connection. Changing the appearance keeps the same conversation.
 - **Optional local voice and vision.** Whisper recognition, Kokoro or Piper speech, voice style/pitch controls, wake phrases and engaged follow-up listening. Camera attention steers the avatar; image questions go to the selected model when it supports images.
 - **A digital-body control panel.** LampOS-backed music playback, selected-output volume, device controls and native Harness pairing. Successful remote task completion is still being qualified.
-- **A galaxy when you want one.** Avalon's Constellation appearance has its own settings, speech-driven glow and camera-driven positioning. The standalone [Constellation app](https://github.com/progretech-llc/constellation) remains independent. Only one wallpaper renderer can be active.
+- **A galaxy when you want one.** Avalon's Constellation appearance has its own settings, agent visibility and folder selections, speech-driven glow and camera-driven positioning. Automatic selection hides historical-only agent names. The standalone [Constellation app](https://github.com/progretech-llc/constellation) remains independent. Only one wallpaper renderer can be active.
 
 ## Choose your connection
 

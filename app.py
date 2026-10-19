@@ -48,6 +48,9 @@ def create_app(controller=None, test_config=None):
         app.config.update(test_config)
     control = controller or Controller(state)
     app.extensions["avalon"] = control
+    from galaxy_sources import GalaxySources
+
+    app.extensions["galaxy_sources"] = GalaxySources(state)
     wallpaper_cache = {"at": 0, "value": {"mode": "desktop"}}
     wallpaper_lock = threading.Lock()
 
@@ -178,6 +181,55 @@ def create_app(controller=None, test_config=None):
         import constellation
 
         return jsonify(settings=constellation.configure(request.get_json()))
+
+    @app.get("/api/constellation/sources")
+    @private
+    def constellation_sources():
+        return jsonify(app.extensions["galaxy_sources"].snapshot())
+
+    @app.post("/api/constellation/sources")
+    @private
+    def constellation_sources_action():
+        data = request.get_json()
+        manager = app.extensions["galaxy_sources"]
+        if data == {"action": "refresh"}:
+            manager.request_refresh()
+            return jsonify(manager.snapshot())
+        if (
+            isinstance(data, dict)
+            and set(data) == {"action", "settings", "revision"}
+            and data["action"] == "save"
+        ):
+            return jsonify(
+                manager.save({key: data[key] for key in ("settings", "revision")})
+            )
+        raise ValueError("Choose a valid galaxy source action")
+
+    @app.post("/api/constellation/folder")
+    @private
+    def constellation_choose_folder():
+        if request.get_json() != {}:
+            raise ValueError("Folder chooser accepts no path or command")
+        try:
+            selected = subprocess.run(
+                ["/usr/bin/python3", str(ROOT / "scripts/choose-galaxy-folder.py")],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=180,
+            )
+            result = json.loads(selected.stdout)
+            if (
+                not isinstance(result, dict)
+                or set(result) != {"path"}
+                or (result["path"] is not None and not isinstance(result["path"], str))
+            ):
+                raise ValueError("Invalid folder selection")
+            return jsonify(result)
+        except (subprocess.SubprocessError, OSError, ValueError):
+            raise ValueError(
+                "Folder chooser is unavailable. Paste an absolute folder path instead."
+            ) from None
 
     @app.get("/api/constellation/foreground")
     @private
@@ -479,8 +531,12 @@ def main():
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
+    application = create_app(controller)
+    sources = application.extensions["galaxy_sources"]
+    sources.start()
+    atexit.register(sources.close)
     serve(
-        create_app(controller),
+        application,
         host="127.0.0.1",
         port=PORT,
         threads=8,
