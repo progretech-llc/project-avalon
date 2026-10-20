@@ -10,7 +10,7 @@ The native galaxy retains the same left-side Avalon name, runtime and activity s
 
 ## Agents and folders
 
-Open **Appearance → Constellation → Agents and folders in this galaxy**. Automatic mode displays identities found in current local configuration; this does not imply they are running. Historical-only names from saved configuration or recorded activity are hidden automatically. Expand Historical identities to select them explicitly, or use Hide all. These are display choices, not agent creation, deletion or execution permissions.
+Open **Appearance → Constellation → Agents and folders in this galaxy**. Automatic mode displays identities found in current local configuration; this does not imply they are running. Deleted and historical-only identities are excluded from the roster and from saved manual selections. Use Hide all to hide the current agents. Their previous memory records remain available. These are display choices, not agent creation, deletion or execution permissions.
 
 Add folders by absolute path or the native folder chooser, rename their display labels, remove them from the galaxy, and set file/subfolder limits. The memory-system checkbox controls its visibility. Removing an item never deletes the underlying folder or memory. Apply saves independent preferences in `~/.config/project-avalon/constellation-sources.json`, initially seeded once from standalone Constellation settings. Reload saved selections discards an unsaved draft; refresh preserves it.
 

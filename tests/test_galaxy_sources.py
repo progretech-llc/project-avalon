@@ -76,11 +76,9 @@ class GalaxySourcesTest(unittest.TestCase):
             },
         )
         self.assertEqual(gs.GalaxySources.selected(self.prefs, found), ["worker"])
-        self.assertFalse(
-            next(x for x in found if x["id"] == "openclaw-desk")["current"]
-        )
+        self.assertNotIn("openclaw-desk", [x["id"] for x in found])
         manual = {**self.prefs, "display_agents": ["openclaw-desk"]}
-        self.assertEqual(gs.GalaxySources.selected(manual, found), ["openclaw-desk"])
+        self.assertEqual(gs.GalaxySources.selected(manual, found), [])
         self.assertEqual(
             gs.GalaxySources.selected({**self.prefs, "display_agents": []}, found), []
         )

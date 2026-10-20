@@ -871,7 +871,8 @@ function renderGalaxySources(data) {
     title.textContent=item.name+' · '+item.id;detail.textContent=(item.current?'Configured locally':'Historical only')+' · '+item.sources.join('; ');text.append(title,detail);label.append(check,text);
     $(item.current?'galaxy-current-agents':'galaxy-historical-agents').append(label);
   }
-  if(!data.agents.some(x=>x.current)){const empty=document.createElement('p');empty.className='field-note';empty.textContent='No current named identities found. Refresh discovery or explicitly select a historical identity below.';$('galaxy-current-agents').append(empty);}
+  if(!data.agents.some(x=>x.current)){const empty=document.createElement('p');empty.className='field-note';empty.textContent='No current named identities found. Refresh discovery after configuring a local agent.';$('galaxy-current-agents').append(empty);}
+  $('galaxy-history').hidden=true;
   $('galaxy-history-title').textContent=`Historical identities (${data.agents.filter(x=>!x.current).length})`;
   $('galaxy-root-list').replaceChildren();for(const root of data.settings.roots)galaxyRootRow(root);
   $('galaxy-max-files').value=data.settings.max_files;$('galaxy-max-directories').value=data.settings.max_directories;$('galaxy-show-memory').checked=data.settings.show_memory;

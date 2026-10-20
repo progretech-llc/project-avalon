@@ -143,7 +143,7 @@ def candidates(scene, base, discovered):
             )
             add(item.get("id"), item.get("name", ""), source, current)
     return sorted(
-        items.values(), key=lambda x: (not x["current"], x["name"].casefold(), x["id"])
+        (x for x in items.values() if x['current']), key=lambda x: (not x["current"], x["name"].casefold(), x["id"])
     )
 
 
@@ -251,17 +251,6 @@ class GalaxySources:
         with self.lock:
             prefs = self.prefs()
             roster = self.roster or candidates(self.original_scene(), self.base(), {})
-            # A saved historical selection remains removable even after its export disappears.
-            for identity in prefs["display_agents"] or []:
-                if not any(x["id"] == identity for x in roster):
-                    roster.append(
-                        dict(
-                            id=identity,
-                            name=identity,
-                            current=False,
-                            sources=["Saved Avalon selection"],
-                        )
-                    )
             selected = set(self.selected(prefs, roster))
             return dict(
                 settings=prefs,
@@ -280,11 +269,10 @@ class GalaxySources:
 
     @staticmethod
     def selected(prefs, roster):
-        return (
-            prefs["display_agents"]
-            if prefs["display_agents"] is not None
-            else [x["id"] for x in roster if x["current"]]
-        )
+        current = [x["id"] for x in roster if x["current"]]
+        chosen = prefs["display_agents"]
+        return current if chosen is None else [identity for identity in chosen if identity in current]
+
 
     def save(self, data):
         if not isinstance(data, dict) or set(data) != {"settings", "revision"}:
@@ -438,7 +426,7 @@ class GalaxySources:
             self.last_checked = int(time.time())
             warnings = discovered.get("warnings", [])
             self.notice = (
-                "Avalon scene refreshed. Historical-only identities are hidden in Automatic mode."
+                "Avalon scene refreshed. Deleted and historical-only identities are excluded."
                 + (
                     " Some local identity sources could not be checked."
                     if warnings
