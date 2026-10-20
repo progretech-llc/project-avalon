@@ -1,6 +1,7 @@
 """One selected LampOS session, with native permissions and fenced events."""
 
 import json
+import desktop_chat
 import os
 import re
 import secrets
@@ -421,6 +422,8 @@ class Controller:
                 },
             ),
         }
+        self._wallpaper_speech = None
+        self.desktop_chat = desktop_chat.validate(desktop_chat.DEFAULTS, self.store.get('desktop_chat', {}))
         self.closing = threading.Event()
         self.store.event(
             "startup", "Control center started; no previous task was replayed"
@@ -453,6 +456,15 @@ class Controller:
                 "generation": self.generation,
                 "heartbeat": time.time(),
                 "appearance": self.appearance,
+                "desktop_chat": {
+                    **self.desktop_chat,
+                    "active": bool(self.active),
+                    "connected": bool(self.ws and self.selected),
+                    "platform": current.get("platform", "opencode") if current else "",
+                    "session": self.selected,
+                    **(desktop_chat.latest_exchange(self.store.messages(self.selected))
+                       if self.desktop_chat['enabled'] and self.selected else dict(user=None, reply=None)),
+                },
             },
             durable=False,
         )
@@ -489,6 +501,7 @@ class Controller:
             response = {
                 "revision": self.revision,
                 "appearance": dict(self.appearance),
+                "desktop_chat": dict(self.desktop_chat),
                 "status": self.visible_status(),
                 "runtime_status": self.status,
                 "sensors": self.visual_sensors(),
@@ -517,6 +530,26 @@ class Controller:
                     events=self.store.events(),
                 )
             return response
+
+    def set_desktop_chat(self, data):
+        with self.lock:
+            self.desktop_chat = desktop_chat.validate(self.desktop_chat, data)
+            self.store.set('desktop_chat', self.desktop_chat)
+            if self.media and (not self.desktop_chat['enabled'] or not self.desktop_chat['read_aloud']) and self._wallpaper_speech == (self.selected, self.generation):
+                self.media.stop_audio()
+                self._wallpaper_speech = None
+            self.publish()
+            return self.snapshot()
+
+    def desktop_chat_send(self, data):
+        with self.lock:
+            if not self.desktop_chat['enabled']:
+                raise Conflict('Enable wallpaper chat in Presence before sending')
+            if not isinstance(data, dict) or data.get('session') != self.selected:
+                raise Conflict('The conversation changed. Review it before sending again')
+            if self.media and self.media.locked:
+                raise Conflict('Unlock Ubuntu before sending a wallpaper message')
+            return self.chat(data.get('text'), wallpaper=True)
 
     def set_appearance(self, data):
         if not isinstance(data, dict) or set(data) - {
@@ -680,7 +713,7 @@ class Controller:
             else self.select({})
         )
 
-    def chat(self, text, spoken=False, vision=False):
+    def chat(self, text, spoken=False, vision=False, wallpaper=False):
         if not isinstance(text, str) or not text.strip() or len(text) > 16000:
             raise ValueError("Message must contain 1–16,000 characters")
         with self.lock:
@@ -723,6 +756,7 @@ class Controller:
                 "text": "",
                 "session": self.selected,
                 "spoken": spoken,
+                "wallpaper": wallpaper,
                 "media_epoch": self.media.epoch if self.media else None,
             }
             self.active = job
@@ -792,11 +826,13 @@ class Controller:
         if (
             self.media
             and job.get("media_epoch") == self.media.epoch
-            and (job.get("spoken") or self.media.awake)
-            and self.media.settings["spoken_replies"]
+            and ((self.desktop_chat['enabled'] and self.desktop_chat['read_aloud'])
+                 if job.get('wallpaper') else
+                 ((job.get("spoken") or self.media.awake) and self.media.settings["spoken_replies"]))
             and not self.pending_action
         ):
             try:
+                self._wallpaper_speech = (self.selected, self.generation) if job.get('wallpaper') else None
                 self.media.speak(text)
             except ValueError as exc:
                 self.media.state["notice"] = str(exc)

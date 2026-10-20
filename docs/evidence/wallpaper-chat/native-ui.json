@@ -1,0 +1,14 @@
+{
+  "default_off": true,
+  "two_bubbles": true,
+  "real_pointer_focus_and_keyboard_send": true,
+  "preserved_session_id": true,
+  "real_pointer_speaker_toggle": true,
+  "real_pointer_drag_and_normalized_position": true,
+  "anchor_right": true,
+  "translucency": true,
+  "overview_hidden": true,
+  "stale_controller_hidden": true,
+  "disable_and_wallpaper_handover_cleanup": true,
+  "limitation": "Native UI commands use a synthetic transport stub. Authenticated transport, turn fencing and session continuity have separate backend checks; physical speech output is not asserted."
+}

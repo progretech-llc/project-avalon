@@ -247,6 +247,16 @@ def create_app(controller=None, test_config=None):
     def appearance():
         return jsonify(control.set_appearance(request.get_json()))
 
+    @app.post("/api/desktop-chat")
+    @private
+    def desktop_chat_settings():
+        return jsonify(control.set_desktop_chat(request.get_json()))
+
+    @app.post("/api/desktop-chat/send")
+    @private
+    def desktop_chat_send():
+        return jsonify(turn=control.desktop_chat_send(request.get_json())), 202
+
     @app.post("/api/chat")
     @private
     def chat():

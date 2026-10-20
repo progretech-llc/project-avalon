@@ -101,6 +101,7 @@ function page(name) {
   if (name === "robot" && authorized) action(refreshRobot);
 }
 function controls() {
+  for (const id of ["wallpaper-chat-enabled","wallpaper-chat-placement","wallpaper-chat-opacity","wallpaper-chat-save"]) $(id).disabled=!authorized||busy;
   if (galaxySources) syncGalaxySourceControls(galaxySources);
   for (const button of document.querySelectorAll("button[data-avatar]"))
     button.disabled = !authorized || busy;
@@ -345,6 +346,14 @@ function apply(data, force = false) {
       $("render-motion").value = a.motion;
       $("idle-saver").checked = a.idle_saver !== false;
     }
+  }
+  if (data.desktop_chat && !document.querySelector('#wallpaper-chat-form:focus-within')) {
+    const c = data.desktop_chat;
+    $('wallpaper-chat-enabled').checked = c.enabled;
+    $('wallpaper-chat-options').hidden = !c.enabled;
+    $('wallpaper-chat-placement').value = c.placement;
+    $('wallpaper-chat-opacity').value = Math.round(c.opacity * 100);
+    $('wallpaper-chat-opacity-value').textContent = Math.round(c.opacity * 100) + '%';
   }
   document.body.dataset.status = state.status;
   setCore(state.status, state.appearance, state.sensors);
@@ -900,3 +909,19 @@ $('galaxy-sources-form').addEventListener('submit',event=>{event.preventDefault(
   const data=await api('/api/constellation/sources',{action:'save',revision:galaxySources.revision,settings:{roots,display_agents:selected,max_files:Number($('galaxy-max-files').value),max_directories:Number($('galaxy-max-directories').value),show_memory:$('galaxy-show-memory').checked}});
   renderGalaxySources(data);watchGalaxySources({...data,busy:true});notice('Avalon agent and folder selection saved.','success');
 });});
+
+$('wallpaper-chat-opacity').addEventListener('input',()=>{
+  $('wallpaper-chat-opacity-value').textContent=$('wallpaper-chat-opacity').value+'%';
+});
+$('wallpaper-chat-enabled').addEventListener('change',()=>{
+  $('wallpaper-chat-options').hidden=!$('wallpaper-chat-enabled').checked;
+  $('wallpaper-chat-form').requestSubmit();
+});
+$('wallpaper-chat-form').addEventListener('submit',event=>{
+  event.preventDefault();
+  action(async()=>apply(await api('/api/desktop-chat',{
+    enabled:$('wallpaper-chat-enabled').checked,
+    placement:$('wallpaper-chat-placement').value,
+    opacity:Number($('wallpaper-chat-opacity').value)/100
+  })));
+});

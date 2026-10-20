@@ -1,0 +1,10 @@
+{
+  "same_selected_session": true,
+  "same_stored_message_count": true,
+  "default_off": true,
+  "installed_helper_settings_authenticated": true,
+  "disabled_send_refused": true,
+  "no_model_turn_started": true,
+  "installed_extension_matches_reviewed_source": true,
+  "current_login_needs_normal_logout_login": true
+}

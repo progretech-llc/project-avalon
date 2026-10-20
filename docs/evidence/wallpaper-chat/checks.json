@@ -1,0 +1,23 @@
+{
+  "date": "2026-10-20",
+  "python_regression": {
+    "passed": 78
+  },
+  "javascript": [
+    "native ownership fixture passed",
+    "galaxy fixture passed",
+    "changed JavaScript syntax checks passed"
+  ],
+  "browser": {
+    "viewports": [
+      390,
+      1280
+    ],
+    "default_off": true,
+    "settings_roundtrip": true,
+    "horizontal_overflow": false
+  },
+  "native": "guarded disposable GNOME Shell50 with real virtual input; synthetic command transport",
+  "physical_speech_output_requalified": false,
+  "permission_check": "native Codex app-server config/read; no generation"
+}

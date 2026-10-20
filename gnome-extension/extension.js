@@ -9,6 +9,7 @@ import Meta from "gi://Meta";
 import * as Main from "resource:///org/gnome/shell/ui/main.js";
 import { Extension } from "resource:///org/gnome/shell/extensions/extension.js";
 import { createConstellation } from "./constellation-presence.js";
+import { ChatOverlay } from "./chat-overlay.js";
 import { claimWallpaper } from "./ownership.js";
 
 let source = "";
@@ -117,6 +118,7 @@ export default class Avalon extends Extension {
     this._activity = 0;
     this._appearance = { ...DEFAULTS };
     this._model = "";
+    this._platform = "OpenCode";
     this._sensors = { gaze: [0, 0], level: 0 };
     this._dirty = true;
     this._release = claimWallpaper(this.uuid, () => this.disable());
@@ -143,6 +145,7 @@ export default class Avalon extends Extension {
           this._dirty = true;
         },
       );
+      this._chat = new ChatOverlay(this.path);
       this._readStatus();
       this._build();
       this._started = GLib.get_monotonic_time();
@@ -180,15 +183,19 @@ export default class Avalon extends Extension {
   }
   _readStatus() {
     this._awake = false;
+    let chat = null, fresh = false;
     let activity = 0,
       appearance = { ...DEFAULTS },
-      model = "",
+      model = "", platform = "OpenCode",
       sensors = { gaze: [0, 0], level: 0 };
     try {
       const [ok, bytes] = GLib.file_get_contents(this._statePath);
-      if (!ok || bytes.length > 4096) throw new Error("Invalid visual state");
+      if (!ok || bytes.length > 65536) throw new Error("Invalid visual state");
       const data = JSON.parse(new TextDecoder().decode(bytes));
       this._awake = data.awake === true && Math.abs(Date.now() / 1000 - data.heartbeat) < 10;
+      fresh = Number.isFinite(data.heartbeat) && Math.abs(Date.now()/1000-data.heartbeat)<10;
+      chat = data.desktop_chat;
+      platform = ({codex:"Codex", claude:"Claude Code", hermes:"Hermes", opencode:"OpenCode"})[data.platform] || "OpenCode";
       const settings = data.appearance ?? {};
       // Persist the user's appearance even when the controller heartbeat expires.
       if (Object.prototype.hasOwnProperty.call(AVATARS, settings.avatar))
@@ -223,11 +230,12 @@ export default class Avalon extends Extension {
     } catch {
       /* A missing or malformed status never stops the desktop. */
     }
+    this._chat?.update(chat, fresh);
     if (
       JSON.stringify(sensors) !== JSON.stringify(this._sensors) ||
       activity !== this._activity ||
       JSON.stringify(appearance) !== JSON.stringify(this._appearance) ||
-      model !== this._model
+      model !== this._model || platform !== this._platform
     ) {
       const still =
         appearance.motion === "reduced" ||
@@ -241,11 +249,12 @@ export default class Avalon extends Extension {
       this._activity = activity;
       this._appearance = appearance;
       this._model = model;
+      this._platform = platform;
       if (this._tick && this._timerFps !== this._frameLimit())
         this._setFrameTimer();
       for (const area of this._areas) {
         area._model.text = model
-          ? "OpenCode / " + model
+          ? platform + " / " + model
           : "Open Project Avalon to connect";
       }
     }
@@ -381,7 +390,7 @@ export default class Avalon extends Extension {
       });
       const model = new St.Label({
         text: this._model
-          ? "OpenCode / " + this._model
+          ? this._platform + " / " + this._model
           : "Open Project Avalon to connect",
         style: "font-size: 13px; color: #a0b0c1;",
       });
@@ -413,6 +422,8 @@ export default class Avalon extends Extension {
     button.visible = !Main.overview.visible && !Main.screenShield.locked && !covered;
   }
   disable() {
+    this._chat?.destroy();
+    this._chat = null;
     this._galaxy?.disable();
     this._galaxy = null;
     this._hudGalaxyAreas = null;
