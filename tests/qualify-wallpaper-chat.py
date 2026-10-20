@@ -30,6 +30,16 @@ write();sh.evaluate("Main.extensionManager.lookup('avalon@progretech.com').state
 assert value('return c.actor.visible;') is False
 write(enabled=True)
 assert value('return c.actor.visible;') is True
+# Reserve real Mutter workarea struts, as Ubuntu's fixed left/bottom docks do.
+sh.evaluate("""(()=>{const St=imports.gi.St,m=Main.layoutManager.primaryMonitor;
+ globalThis.__dockLeft=new St.Widget({x:m.x,y:m.y+32,width:96,height:m.height-32});
+ globalThis.__dockBottom=new St.Widget({x:m.x,y:m.y+m.height-72,width:m.width,height:72});
+ Main.layoutManager.addChrome(__dockLeft,{affectsStruts:true});
+ Main.layoutManager.addChrome(__dockBottom,{affectsStruts:true});return true;})()""")
+time.sleep(.6)
+assert value('return c.actor.x>=112;'),'Chat overlaps reserved left dock'
+assert value('return c.actor.y+c.actor.height<=Main.layoutManager.primaryMonitor.height-88;'),'Chat overlaps bottom dock'
+
 assert value('return c.user.text.text;')==data['desktop_chat']['user']['text']
 assert value('return c.reply.text.text;')==data['desktop_chat']['reply']['text']
 sh.capture(args.out/'wallpaper-chat.png')
@@ -60,7 +70,9 @@ x,y=value('return c.speaker.get_transformed_position();');click(x+15,y+15);time.
 assert sh.evaluate('__chatRequests[1]')==dict(action='settings',payload=dict(read_aloud=True))
 assert value('return c.speaker.child.icon_name;')=='audio-volume-high-symbolic'
 write(placement='movable')
-x,y=value('return c.title.get_parent().get_transformed_position();')
+x,y=value('return c.entry.get_transformed_position();');click(x+30,y+15)
+assert value('return !c.drag && global.stage.get_key_focus()===c.entry.clutter_text;')
+x,y=value('return c.reply.box.get_transformed_position();')
 sh.evaluate(f'__chatPointer.notify_absolute_motion(GLib.get_monotonic_time(),{x+60},{y+14});true');time.sleep(.05)
 sh.evaluate('__chatPointer.notify_button(GLib.get_monotonic_time(),1,imports.gi.Clutter.ButtonState.PRESSED);true');time.sleep(.05)
 assert value('return !!c.drag;')
@@ -77,11 +89,12 @@ sh.evaluate('Main.overview.show();true');time.sleep(.5);assert value('return c.a
 sh.evaluate('Main.overview.hide();true');time.sleep(.5)
 data['heartbeat']=time.time()-30;fixture.write_text(json.dumps(data));time.sleep(.3);assert value('return c.actor.visible;') is False
 write(enabled=False);assert value('return c.actor.visible;') is False
+sh.evaluate('Main.layoutManager.removeChrome(__dockLeft);__dockLeft.destroy();Main.layoutManager.removeChrome(__dockBottom);__dockBottom.destroy();true')
 sh.enable(module.CONSTELLATION);sh.wait_owner(module.CONSTELLATION)
 assert sh.evaluate("Main.extensionManager.lookup('avalon@progretech.com').stateObj?._chat??null") is None
 proof=dict(default_off=True,two_bubbles=True,real_pointer_focus_and_keyboard_send=True,
     preserved_session_id=True,real_pointer_speaker_toggle=True,real_pointer_drag_and_normalized_position=True,
-    anchor_right=True,translucency=True,overview_hidden=True,stale_controller_hidden=True,
+    dock_workarea_clearance=True,message_area_drag=True,movable_entry_focus=True,anchor_right=True,translucency=True,overview_hidden=True,stale_controller_hidden=True,
     disable_and_wallpaper_handover_cleanup=True,
     limitation='Native UI commands use a synthetic transport stub. Authenticated transport, turn fencing and session continuity have separate backend checks; physical speech output is not asserted.')
 (args.out/'proof.json').write_text(json.dumps(proof,indent=2)+'\n');print(json.dumps(proof))

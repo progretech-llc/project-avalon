@@ -42,14 +42,6 @@ export class ChatOverlay {
         this.status = new St.Label({text: '', style: 'font-size: 12px; color: #a0b0c1; padding-top: 6px;'});
         this.status.clutter_text.line_wrap = true;
         this.actor.add_child(this.status);
-        header.connect('button-press-event', (_a, event) => {
-            if (event.get_button() !== 1 || this.data?.placement !== 'movable') return Clutter.EVENT_PROPAGATE;
-            const [x,y] = event.get_coords(), [sx,sy] = this.speaker.get_transformed_position();
-            if (x>=sx && x<sx+this.speaker.width && y>=sy && y<sy+this.speaker.height) return Clutter.EVENT_PROPAGATE;
-            this.drag = {x,y, left:this.actor.x, top:this.actor.y};
-            this.grab = global.stage.grab(this.actor);
-            return Clutter.EVENT_STOP;
-        });
         this.capture = this.actor.connect('captured-event', (_a, event) => this.dragEvent(event));
         Main.layoutManager.addChrome(this.actor, {affectsStruts: false, trackFullscreen: true});
         this.actor.hide();
@@ -101,19 +93,35 @@ export class ChatOverlay {
             });
         } catch {this.pending=false;this.error='Open Avalon to restore the local connection.';}
     }
+    bounds() {
+        const area = Main.layoutManager.getWorkAreaForMonitor(Main.layoutManager.primaryIndex);
+        // Respect panel/dock struts and leave a small gap at every usable edge.
+        return {x:area.x+16, y:area.y+16, width:Math.max(1,area.width-32), height:Math.max(1,area.height-32)};
+    }
     dragEvent(event) {
-        if (!this.drag) return Clutter.EVENT_PROPAGATE;
+        if (!this.drag) {
+            if (event.type() !== Clutter.EventType.BUTTON_PRESS || event.get_button() !== 1 ||
+                this.data?.placement !== 'movable') return Clutter.EVENT_PROPAGATE;
+            const [x,y] = event.get_coords();
+            for (const control of [this.entry,this.sendButton,this.speaker]) {
+                const [cx,cy] = control.get_transformed_position();
+                if (x>=cx && x<cx+control.width && y>=cy && y<cy+control.height) return Clutter.EVENT_PROPAGATE;
+            }
+            this.drag = {x,y,left:this.actor.x,top:this.actor.y};
+            this.grab = global.stage.grab(this.actor);
+            return Clutter.EVENT_STOP;
+        }
         if (event.type() === Clutter.EventType.MOTION) {
-            const [x,y] = event.get_coords(), m = Main.layoutManager.primaryMonitor;
+            const [x,y] = event.get_coords(), m = this.bounds();
             this.actor.set_position(Math.max(m.x,Math.min(m.x+m.width-this.actor.width,this.drag.left+x-this.drag.x)),
-                Math.max(m.y+32,Math.min(m.y+m.height-this.actor.height,this.drag.top+y-this.drag.y)));
+                Math.max(m.y,Math.min(m.y+m.height-this.actor.height,this.drag.top+y-this.drag.y)));
             return Clutter.EVENT_STOP;
         }
         if (event.type() === Clutter.EventType.BUTTON_RELEASE ||
             (event.type() === Clutter.EventType.KEY_PRESS && event.get_key_symbol() === Clutter.KEY_Escape)) {
-            const m=Main.layoutManager.primaryMonitor;
+            const m=this.bounds();
             const position={x:Math.max(0,Math.min(1,(this.actor.x-m.x)/Math.max(1,m.width-this.actor.width))),
-                y:Math.max(0,Math.min(1,(this.actor.y-m.y-32)/Math.max(1,m.height-this.actor.height-32)))};
+                y:Math.max(0,Math.min(1,(this.actor.y-m.y)/Math.max(1,m.height-this.actor.height)))};
             this.drag=null;this.grab?.dismiss();this.grab=null;
             this.command('settings',position);return Clutter.EVENT_STOP;
         }
@@ -126,7 +134,7 @@ export class ChatOverlay {
             if (focus && this.actor.contains(focus)) global.stage.set_key_focus(null);
             this.actor.hide();return;
         }
-        const m=Main.layoutManager.primaryMonitor;
+        const m=this.bounds();
         this.actor.width=Math.min(420,m.width-40);
         for (const bubble of [this.user,this.reply]) bubble.scroll.set_style(`max-height: ${Math.max(40,Math.min(210,(m.height-260)/2))}px;`);
         const opacity=Number.isFinite(data.opacity)?Math.max(.25,Math.min(.95,data.opacity)):.72;
@@ -141,9 +149,9 @@ export class ChatOverlay {
         this.entry.reactive=!data.active&&!this.pending;
         this.status.text=this.error || (this.pending?'Sending…':data.active?'Working…':!data.connected?'Connect an agent in Presence.':'Enter to send · Esc to leave chat');
         if (!this.drag) {
-            const x=data.placement==='anchor-right'?m.width-this.actor.width-40:data.placement==='movable'?Math.max(0,Math.min(1,data.x??.06))*(m.width-this.actor.width):40;
-            const y=data.placement==='movable'?32+Math.max(0,Math.min(1,data.y??.60))*(m.height-this.actor.height-32):m.height-this.actor.height-100;
-            this.actor.set_position(Math.round(m.x+x),Math.round(Math.max(m.y+32,m.y+y)));
+            const x=data.placement==='anchor-right'?m.width-this.actor.width:data.placement==='movable'?Math.max(0,Math.min(1,data.x??.06))*(m.width-this.actor.width):0;
+            const y=data.placement==='movable'?Math.max(0,Math.min(1,data.y??.60))*(m.height-this.actor.height):m.height-this.actor.height;
+            this.actor.set_position(Math.round(m.x+x),Math.round(Math.max(m.y,m.y+y)));
         }
         const covered=global.display.get_tab_list(Meta.TabList.NORMAL_ALL,global.workspace_manager.get_active_workspace()).some(w=>{
             if(w.minimized||w.get_window_type()===Meta.WindowType.DESKTOP)return false;

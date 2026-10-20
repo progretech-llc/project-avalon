@@ -1,0 +1,26 @@
+{
+  "default_off": true,
+  "two_bubbles": true,
+  "real_pointer_focus_and_keyboard_send": true,
+  "preserved_session_id": true,
+  "real_pointer_speaker_toggle": true,
+  "real_pointer_drag_and_normalized_position": true,
+  "dock_workarea_clearance": true,
+  "message_area_drag": true,
+  "movable_entry_focus": true,
+  "anchor_right": true,
+  "translucency": true,
+  "overview_hidden": true,
+  "stale_controller_hidden": true,
+  "disable_and_wallpaper_handover_cleanup": true,
+  "limitation": "Native UI commands use a synthetic transport stub. Authenticated transport, turn fencing and session continuity have separate backend checks; physical speech output is not asserted.",
+  "browser_unsaved_choices_survive_blur_and_polling": true,
+  "browser_saved_form_resumes_live_updates": true,
+  "python_tests_passed": 78,
+  "node_checks": [
+    "ownership",
+    "constellation"
+  ],
+  "installed_overlay_sha256": "81114e568bf3370adc77caab90429c83b57c952b92491ceb150494fd9da6c92e",
+  "activation": "Installed; login Shell requires next normal logout/login. Browser controls require reload."
+}

@@ -16,6 +16,7 @@ let state = {
   events: [],
 };
 let devicesDirty = false;
+let wallpaperChatDirty = false;
 let setCore = () => {};
 try {
   setCore = mountCore($("presence-canvas"));
@@ -347,7 +348,7 @@ function apply(data, force = false) {
       $("idle-saver").checked = a.idle_saver !== false;
     }
   }
-  if (data.desktop_chat && !document.querySelector('#wallpaper-chat-form:focus-within')) {
+  if (data.desktop_chat && !wallpaperChatDirty && !document.querySelector('#wallpaper-chat-form:focus-within')) {
     const c = data.desktop_chat;
     $('wallpaper-chat-enabled').checked = c.enabled;
     $('wallpaper-chat-options').hidden = !c.enabled;
@@ -910,6 +911,8 @@ $('galaxy-sources-form').addEventListener('submit',event=>{event.preventDefault(
   renderGalaxySources(data);watchGalaxySources({...data,busy:true});notice('Avalon agent and folder selection saved.','success');
 });});
 
+$('wallpaper-chat-form').addEventListener('input',()=>{wallpaperChatDirty=true;});
+$('wallpaper-chat-form').addEventListener('change',()=>{wallpaperChatDirty=true;});
 $('wallpaper-chat-opacity').addEventListener('input',()=>{
   $('wallpaper-chat-opacity-value').textContent=$('wallpaper-chat-opacity').value+'%';
 });
@@ -919,9 +922,9 @@ $('wallpaper-chat-enabled').addEventListener('change',()=>{
 });
 $('wallpaper-chat-form').addEventListener('submit',event=>{
   event.preventDefault();
-  action(async()=>apply(await api('/api/desktop-chat',{
+  action(async()=>{const result=await api('/api/desktop-chat',{
     enabled:$('wallpaper-chat-enabled').checked,
     placement:$('wallpaper-chat-placement').value,
     opacity:Number($('wallpaper-chat-opacity').value)/100
-  })));
+  });wallpaperChatDirty=false;apply(result);});
 });
