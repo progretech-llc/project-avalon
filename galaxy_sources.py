@@ -312,6 +312,13 @@ class GalaxySources:
         )
         result = filter_scene(source, set(self.selected(prefs, self.roster)), prefs)
         if result:
+            from resource_activity import read_events, read_owners, overlay
+            try:
+                events = read_events()
+                if events:
+                    overlay(result, events, read_owners())
+            except (OSError, ValueError, subprocess.SubprocessError):
+                result['resource_activity_error'] = 'Native resource metadata unavailable'
             atomic_json(SCENE, result, durable=False)
 
     def request_refresh(self):
@@ -356,7 +363,17 @@ class GalaxySources:
             finally:
                 with self.lock:
                     self.busy = False
-            self.wake.wait(120)
+            # Cheap receipt-only updates between the existing two-minute memory refreshes.
+            for _ in range(12):
+                if self.stop.is_set() or self.wake.wait(10):
+                    break
+                try:
+                    with self.lock:
+                        self.publish_filtered()
+                except (OSError, ValueError, KeyError, TypeError):
+                    with self.lock:
+                        self.notice = 'Resource refresh failed; retrying with the next scene refresh.'
+                    break
 
     def refresh(self):
         with self.lock:

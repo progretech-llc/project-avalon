@@ -17,3 +17,28 @@ Add folders by absolute path or the native folder chooser, rename their display 
 With a sibling `constellation` checkout and its working `.venv/bin/python`, Avalon reuses that project's native discovery and bounded scene collector. It refreshes while Avalon runs, every two minutes or on request. It reads existing configuration and reviewed memory metadata without changing standalone settings or scanning arbitrary file contents. Private collector inputs and unfiltered output stay in Avalon's ignored runtime directory. No standalone UI or collector timer needs to be running. Without the collector, existing exported scene data can still be filtered, but adding folder sources requires installing the collector.
 
 New native scene-path code takes effect after a normal logout/login. The panel controls are available after refreshing the panel. Do not restart GNOME Shell to force a reload.
+
+## Shared resource activity
+
+The workstation Harness fork exports a separate, bounded metadata projection at
+`~/.harness/cli/data/shared-resource-activity/`. Its existing native Codex/Claude
+receipt parser confirms successful direct file reads, literal single-command
+`cat`, `head`, `tail`, `sed` reads, Python tool-script executions, and Hindsight
+calls. Skill discovery links resolve to their original Tools & Assets paths.
+Only public shared-resource paths, service categories, native owner IDs and
+timestamps leave that parser; commands, queries, results and conversations do not.
+Private paths, runtime profiles, databases, credentials and Records are excluded.
+
+Avalon reads this projection every ten seconds between its existing two-minute
+scene rebuilds. Up to three recent resource targets per visible agent supplement
+the existing project targets. Successful Hindsight calls target the visible
+Hindsight system; file reads target their selected folder system. These are
+observed interactions, never verified writes. Events expire after fifteen minutes.
+The native recorded owner must match a visible agent, and folder/memory visibility
+choices still apply. No GNOME JavaScript update or logout is required for this
+collector change.
+
+Coverage is limited to receipts understood by the native parser in Harness-managed
+Codex/Claude sessions. Compound or dynamic shell code, untracked external clients,
+Hermes/OpenClaw/OpenCode tool events, and mapping RAG API calls back to individual
+books are not inferred. Quiet folders remain quiet when there is no eligible event.
