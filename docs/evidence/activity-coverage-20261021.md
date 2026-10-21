@@ -33,3 +33,22 @@ to a local book without source evidence. No synthetic activity is installed.
 
 Rollback: revert the scoped source commits and reinstall the previous Harness CLI;
 restart the Avalon control service. Existing folder selections remain intact.
+
+## Installed verification
+
+Harness source `0b3fe1907319468b33cca159699f986aa874ea4f` was pushed to
+`progretech/monitor-singleton-cleanup` and verified against the live remote branch.
+The installed local build is `0.4.41-dev.0b3fe1907`; its daemon restarted normally.
+Avalon implementation `4023ad2bb01bceb9b73354316e7af2ae076cb942` was pushed to
+`main` and independently matched against the live remote branch. The Avalon
+control service restarted and is active. No extension reinstall or Shell restart.
+
+Live verification found 50 separate native projection files, a refreshed scene
+with 219 nodes less than ten seconds old, and no resource metadata error. The
+100 retained native sessions had zero working sessions and zero fresh eligible
+resource events at that check. This verifies installation and idle operation;
+it does not claim a new live agent interaction occurred. Tests validate the
+positive receipt/export/overlay paths without installing fabricated activity.
+
+Existing unrelated OpenHarness AGENTS.md and diagnostic notes were preserved.
+The standalone Constellation checkout was inspected but not changed.
