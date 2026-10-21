@@ -139,6 +139,7 @@ def candidates(scene, base, discovered):
                     "OpenCode · configured client",
                     "Claude Code · configured client",
                     "Goose · configured client",
+                    "Native Harness · recorded owner",
                 )
             )
             add(item.get("id"), item.get("name", ""), source, current)
@@ -207,7 +208,7 @@ def filter_scene(scene, selected, prefs):
         if activity.get("agent") not in remap:
             continue
         entry = {**activity, "agent": remap[activity["agent"]]}
-        for key in ("targets", "write_targets", "modified_targets"):
+        for key in ("targets", "write_targets", "modified_targets", "context_targets"):
             entry[key] = [remap[i] for i in activity.get(key, []) if i in remap]
         entry["last_modified_root"] = remap.get(activity.get("last_modified_root"))
         result["agent_activity"].append(entry)

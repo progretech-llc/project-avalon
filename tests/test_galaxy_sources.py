@@ -83,6 +83,13 @@ class GalaxySourcesTest(unittest.TestCase):
             gs.GalaxySources.selected({**self.prefs, "display_agents": []}, found), []
         )
 
+    def test_native_owners_are_selectable_and_context_targets_are_reindexed(self):
+        found = gs.candidates({}, {}, {'agents': [dict(id='mak', name='Mak', sources=['Native Harness · recorded owner'])]})
+        self.assertEqual([x['id'] for x in found], ['mak'])
+        self.scene['agent_activity'][1]['context_targets'] = [2, 4]
+        result = gs.filter_scene(self.scene, {'worker'}, self.prefs)
+        self.assertEqual(result['agent_activity'][0]['context_targets'], [1, 3])
+
     def test_filter_reindexes_links_and_all_activity_targets_without_reassigning_authors(
         self,
     ):
