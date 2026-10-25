@@ -43,7 +43,10 @@ export class ChatOverlay {
         this.status.clutter_text.line_wrap = true;
         this.actor.add_child(this.status);
         this.capture = this.actor.connect('captured-event', (_a, event) => this.dragEvent(event));
-        Main.layoutManager.addChrome(this.actor, {affectsStruts: false, trackFullscreen: true});
+        // Fullscreen tracking would let Shell show this actor even when chat is off.
+        Main.layoutManager.addChrome(this.actor, {affectsStruts: false});
+        this.overviewShowing = Main.overview.connect('showing', () => this.update(this.data, this.fresh));
+        this.overviewHidden = Main.overview.connect('hidden', () => this.update(this.data, this.fresh));
         this.actor.hide();
     }
     button(icon, name, callback) {
@@ -129,6 +132,7 @@ export class ChatOverlay {
     }
     update(data, fresh) {
         this.data=data;
+        this.fresh=fresh;
         if (!data?.enabled || !fresh || Main.overview.visible || Main.screenShield.locked) {
             this.grab?.dismiss();this.grab=null;this.drag=null;const focus = global.stage.get_key_focus();
             if (focus && this.actor.contains(focus)) global.stage.set_key_focus(null);
@@ -161,6 +165,8 @@ export class ChatOverlay {
     }
     destroy() {
         this.destroyed=true;this.grab?.dismiss();this.grab=null;
+        Main.overview.disconnect(this.overviewShowing);
+        Main.overview.disconnect(this.overviewHidden);
         if(this.capture)this.actor.disconnect(this.capture);
         // Never kill an admitted request to infer cancellation; its native turn remains authoritative.
         Main.layoutManager.removeChrome(this.actor);this.actor.destroy();

@@ -6,6 +6,8 @@ The speaker button toggles automatic final-reply readout for wallpaper requests.
 
 The overlay is desktop-only: it hides in Overview, while locked, when the controller heartbeat expires, and when an ordinary window covers it. It is one interactive native actor on the primary monitor. Native controls use the existing local authentication, origin checks and CSRF-protected API through the installed helper; no new web service, model or transcript store is introduced.
 
+Visibility fix, 25 October 2026: the composer no longer opts into GNOME's fullscreen visibility tracking, which could override its hidden state during Overview and screen transitions and expose the unpositioned chat at the top left while disabled. Overview signals now update visibility immediately. The isolated native chat qualification checks disabled and stale visibility against Shell updates, plus immediate Overview hiding; chat controls and wallpaper ownership lifecycle checks pass. Updated installed JavaScript takes effect at the next logout/login because the running Shell caches extension modules.
+
 Install using `python3 scripts/install-foundation.py`. Refresh the control-center page for the new controls. A normal logout/login is required to load new extension JavaScript in the login Shell; installing source alone does not activate the overlay in an already running Shell. Do not force-restart the user's GNOME session.
 
 ## Qualification

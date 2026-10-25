@@ -28,6 +28,12 @@ sh.enable(module.AVALON);sh.wait_owner(module.AVALON)
 sh.evaluate('Main.overview.hide();true')
 write();sh.evaluate("Main.extensionManager.lookup('avalon@progretech.com').stateObj._statePath="+json.dumps(str(fixture)));time.sleep(.3)
 assert value('return c.actor.visible;') is False
+# Shell must never override Avalon's off state, even between controller polls.
+assert value('Main.layoutManager._updateVisibility();return c.actor.visible;') is False
+sh.evaluate('Main.overview.show();true');time.sleep(.5)
+assert value('return c.actor.visible;') is False
+sh.evaluate('Main.overview.hide();true');time.sleep(.5)
+assert value('Main.layoutManager._updateVisibility();return c.actor.visible;') is False
 write(enabled=True)
 assert value('return c.actor.visible;') is True
 # Reserve real Mutter workarea struts, as Ubuntu's fixed left/bottom docks do.
@@ -85,14 +91,17 @@ position=sh.evaluate('__chatRequests.at(-1)');assert position['action']=='settin
 write(placement='anchor-right',opacity=.35)
 assert value('return c.actor.x;')>800
 assert value('return c.actor.get_style().includes("0.35");')
-sh.evaluate('Main.overview.show();true');time.sleep(.5);assert value('return c.actor.visible;') is False
+assert value('Main.overview.show();return c.actor.visible;') is False
+time.sleep(.5);assert value('return c.actor.visible;') is False
+assert value('Main.layoutManager._updateVisibility();return c.actor.visible;') is False
 sh.evaluate('Main.overview.hide();true');time.sleep(.5)
 data['heartbeat']=time.time()-30;fixture.write_text(json.dumps(data));time.sleep(.3);assert value('return c.actor.visible;') is False
+assert value('Main.layoutManager._updateVisibility();return c.actor.visible;') is False
 write(enabled=False);assert value('return c.actor.visible;') is False
 sh.evaluate('Main.layoutManager.removeChrome(__dockLeft);__dockLeft.destroy();Main.layoutManager.removeChrome(__dockBottom);__dockBottom.destroy();true')
 sh.enable(module.CONSTELLATION);sh.wait_owner(module.CONSTELLATION)
 assert sh.evaluate("Main.extensionManager.lookup('avalon@progretech.com').stateObj?._chat??null") is None
-proof=dict(default_off=True,two_bubbles=True,real_pointer_focus_and_keyboard_send=True,
+proof=dict(default_off=True,shell_visibility_preserves_off_and_stale=True,overview_immediately_hidden=True,two_bubbles=True,real_pointer_focus_and_keyboard_send=True,
     preserved_session_id=True,real_pointer_speaker_toggle=True,real_pointer_drag_and_normalized_position=True,
     dock_workarea_clearance=True,message_area_drag=True,movable_entry_focus=True,anchor_right=True,translucency=True,overview_hidden=True,stale_controller_hidden=True,
     disable_and_wallpaper_handover_cleanup=True,
