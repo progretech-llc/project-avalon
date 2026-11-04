@@ -224,7 +224,7 @@ def speak():
         else {**DEFAULTS, "text": data[:4000]}
     )
     path = (
-        Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / ".runtime/media/voice.sock"
+        Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / ".runtime/media/v.sock"
     )
     if len(sys.argv) > 2:
         deadline = time.monotonic() + 20

@@ -129,7 +129,7 @@ class Media:
         self.epoch = 0
         self.listener = None
         self.voice_server = None
-        self.voice_socket = self.path / "voice.sock"
+        self.voice_socket = self.path / "v.sock"
         self.voice_socket.unlink(missing_ok=True)
         self.awake = False
         self.followup = 0.0
