@@ -27,6 +27,8 @@ SCENE = (
     / "project-avalon/constellation-scene.json"
 )
 ENGINE = ROOT.parent / "constellation"
+if not ENGINE.is_dir():
+    ENGINE = ROOT.parent / "pt-constellation-factory-alt-dev"
 AGENT_ID = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9_.-]{0,79}")
 
 
@@ -51,6 +53,9 @@ def preferences(base):
         max_directories=base.get("max_directories", 48),
         display_agents=None,
         show_memory=True,
+        project_subfolders=True,
+        openharness=False,
+        harness_agent_limit=5,
     )
 
 
@@ -70,6 +75,11 @@ def validate(data, previous):
             raise ValueError("Invalid " + key.replace("_", " "))
     if type(data["show_memory"]) is not bool:
         raise ValueError("Choose whether to display the memory system")
+    for key in ("project_subfolders", "openharness"):
+        if key in data and type(data[key]) is not bool:
+            raise ValueError("Choose whether to enable " + key)
+    if "harness_agent_limit" in data and (type(data["harness_agent_limit"]) is not int or not 1 <= data["harness_agent_limit"] <= 100):
+        raise ValueError("Choose between 1 and 100 frameworks")
     roots = data["roots"]
     if not isinstance(roots, list) or not 1 <= len(roots) <= 12:
         raise ValueError("Choose between 1 and 12 folders")
@@ -102,6 +112,21 @@ def validate(data, previous):
         labels.add(label.casefold())
         clean.append(dict(label=label, path=str(path)))
     return {**data, "roots": clean}
+
+
+PROJECTS = Path("/mnt/PT-Storage/Projects")
+
+
+def project_roots(prefs):
+    if not prefs.get("project_subfolders", True) or not PROJECTS.is_dir():
+        return prefs["roots"]
+    from resource_activity import safe_path
+    roots = [dict(label=path.name, path=str(path)) for path in sorted(PROJECTS.iterdir())
+             if not path.is_symlink() and path.is_dir() and safe_path(str(path)) is not None]
+    # The existing collector accepts at most twelve systems.
+    if len(roots) > 12:
+        raise ValueError("PT-Storage Projects has more than 12 solar systems; choose folders manually")
+    return roots or prefs["roots"]
 
 
 def candidates(scene, base, discovered):
@@ -234,12 +259,14 @@ class GalaxySources:
         self.notice = "Current identities have not been checked yet."
         self.last_checked = None
         self.thread = None
+        self.frameworks = []
+        self.harness_notice = ""
 
     def base(self):
         return read_json(SOURCE_CONFIG, {})
 
     def prefs(self):
-        return read_json(CONFIG, preferences(self.base()))
+        return {**preferences(self.base()), **(read_json(CONFIG, {}) or {})}
 
     def available(self):
         return (
@@ -255,10 +282,11 @@ class GalaxySources:
             selected = set(self.selected(prefs, roster))
             return dict(
                 settings=prefs,
+                frameworks=[{k: row[k] for k in ("name", "machine", "state", "updated_at")} for row in self.frameworks],
                 revision=revision(prefs),
                 agents=[{**x, "selected": x["id"] in selected} for x in roster],
                 busy=self.busy,
-                notice=self.notice,
+                notice=self.notice + self.harness_notice,
                 checked_at=self.last_checked,
                 collector_available=self.available(),
             )
@@ -287,7 +315,8 @@ class GalaxySources:
             prefs = validate(data["settings"], previous)
             allowed = {x["id"] for x in self.snapshot()["agents"]}
             if (
-                prefs["display_agents"] is not None
+                not prefs.get("openharness")
+                and prefs["display_agents"] is not None
                 and set(prefs["display_agents"]) - allowed
             ):
                 raise ValueError(
@@ -310,12 +339,24 @@ class GalaxySources:
             or read_json(self.state / "galaxy-export-scene.json")
             or self.original_scene()
         )
-        result = filter_scene(source, set(self.selected(prefs, self.roster)), prefs)
+        effective = {**prefs, "roots": project_roots(prefs)}
+        result = filter_scene(source, set() if prefs["openharness"] else set(self.selected(prefs, self.roster)), effective)
+        if result and prefs["openharness"]:
+            from harness_constellation import read_frameworks, overlay as harness_overlay
+            try:
+                self.frameworks, failed = read_frameworks(prefs["harness_agent_limit"], workstation=CONFIG.with_name("laptop-galaxy.json").is_file())
+                self.harness_notice = f" OpenHarness: {len(self.frameworks)} recent frameworks; {failed} machines unavailable."
+            except (OSError, ValueError, subprocess.SubprocessError):
+                self.frameworks = []
+                self.harness_notice = " OpenHarness unavailable. Enable its connection or turn off the optional integration to show local agents."
+            harness_overlay(result, self.frameworks)
+        else:
+            self.harness_notice = ""
         if result:
             from resource_activity import read_events, read_owners, overlay
             try:
-                events = read_events()
-                if events:
+                events = [] if prefs["openharness"] else read_events()
+                if events and not prefs["openharness"]:
                     overlay(result, events, read_owners())
             except (OSError, ValueError, subprocess.SubprocessError):
                 result['resource_activity_error'] = 'Native resource metadata unavailable'
@@ -391,6 +432,9 @@ class GalaxySources:
             **base,
             **{k: prefs[k] for k in ("roots", "max_files", "max_directories")},
         }
+        config["roots"] = project_roots(prefs)
+        if prefs["openharness"]:
+            config["native_harness"] = False
         config["roots"] = sorted(
             config["roots"], key=lambda x: len(Path(x["path"]).parts), reverse=True
         )

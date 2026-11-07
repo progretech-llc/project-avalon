@@ -844,6 +844,13 @@ async function refreshGalaxy(){
 }
 $('galaxy-form').addEventListener('submit',event=>{event.preventDefault();action(async()=>{const data={};for(const [key,[,type]] of Object.entries(galaxyFields)){const field=$('galaxy-'+key);data[key]=type==='checkbox'?field.checked:type==='number'?Number(field.value):field.value;}await api('/api/constellation',data);notice('Avalon galaxy settings saved.','success');});});
 
+function syncHarnessControls(){
+  const enabled=$('galaxy-openharness').checked;
+  $('galaxy-harness-options').hidden=!enabled;
+  $('galaxy-harness-agent-limit').disabled=!enabled;
+  $('galaxy-local-agents').hidden=enabled;
+}
+$('galaxy-openharness').addEventListener('change',syncHarnessControls);
 let galaxySources=null, galaxySourcesDirty=false, galaxySourcesTimer=null, galaxyRootSequence=0;
 function syncGalaxySourceControls(data) {
   $('galaxy-reload').disabled=!authorized||busy;
@@ -871,6 +878,14 @@ function galaxyRootRow(root={label:'',path:''}) {
 }
 function renderGalaxySources(data) {
   galaxySources=data;galaxySourcesDirty=false;$('galaxy-sources-form').hidden=false;
+  $('galaxy-openharness').checked=data.settings.openharness??false;
+  $('galaxy-harness-agent-limit').value=data.settings.harness_agent_limit??5;
+  $('galaxy-project-subfolders').checked=data.settings.project_subfolders??true;
+  syncHarnessControls();
+  $('galaxy-harness-frameworks').replaceChildren();
+  for(const framework of data.frameworks??[]){
+    const row=document.createElement('p');row.className='field-note';row.textContent=framework.name+' · '+framework.machine+' · '+framework.state+' · '+framework.updated_at;$('galaxy-harness-frameworks').append(row);
+  }
   $('galaxy-agents-auto').checked=data.settings.display_agents===null;
   $('galaxy-current-agents').replaceChildren();$('galaxy-historical-agents').replaceChildren();
   for(const item of data.agents){
@@ -907,7 +922,7 @@ $('galaxy-scan').addEventListener('click',()=>action(async()=>{const data=await 
 $('galaxy-sources-form').addEventListener('submit',event=>{event.preventDefault();action(async()=>{
   const roots=Array.from($('galaxy-root-list').children,row=>Object.fromEntries(Array.from(row.querySelectorAll('[data-root-field]'),field=>[field.dataset.rootField,field.value])));
   const selected=$('galaxy-agents-auto').checked?null:Array.from(document.querySelectorAll('[data-agent-identity]:checked'),field=>field.value);
-  const data=await api('/api/constellation/sources',{action:'save',revision:galaxySources.revision,settings:{roots,display_agents:selected,max_files:Number($('galaxy-max-files').value),max_directories:Number($('galaxy-max-directories').value),show_memory:$('galaxy-show-memory').checked}});
+  const data=await api('/api/constellation/sources',{action:'save',revision:galaxySources.revision,settings:{roots,display_agents:$('galaxy-openharness').checked?galaxySources.settings.display_agents:selected,openharness:$('galaxy-openharness').checked,project_subfolders:$('galaxy-project-subfolders').checked,harness_agent_limit:Number($('galaxy-harness-agent-limit').value),max_files:Number($('galaxy-max-files').value),max_directories:Number($('galaxy-max-directories').value),show_memory:$('galaxy-show-memory').checked}});
   renderGalaxySources(data);watchGalaxySources({...data,busy:true});notice('Avalon agent and folder selection saved.','success');
 });});
 

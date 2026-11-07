@@ -42,3 +42,33 @@ Coverage is limited to receipts understood by the native parser in Harness-manag
 Codex/Claude sessions. Compound or dynamic shell code, untracked external clients,
 Hermes/OpenClaw/OpenCode tool events, and mapping RAG API calls back to individual
 books are not inferred. Quiet folders remain quiet when there is no eligible event.
+
+## PT-Storage and optional OpenHarness integration
+
+The PT-Storage subfolders option uses the immediate directories inside
+`/mnt/PT-Storage/Projects` as solar systems when that folder is available.
+It is enabled by default. Saved manual folder choices are retained and used
+when the shared folder is unavailable or the option is off. Hidden, sensitive
+and linked directories are excluded. The existing limit is twelve systems;
+folder contents are not recursively scanned.
+
+Enable **Integration with OpenHarness (optional)** in the same Constellation
+settings to replace local agent identities with recent agent frameworks.
+The count defaults to five and accepts 1–100. Avalon checks the account's
+machines through `harness machines --json` and `harness ps --machine … --all
+--json`, orders sessions by their actual activity timestamps, and displays
+each framework once using its newest session. The settings show its machine,
+state and timestamp. A recently stopped framework may appear; recency does
+not imply it is still working. Unreachable machines are counted in the status.
+
+Framework movement targets the visible solar system containing its latest
+reported session folder, even when that folder belongs to another machine.
+This is session context, without file-write lights or reassigned memory authors.
+Frameworks outside the visible systems keep their normal orbit. Only metadata
+is published; prompts and answers are discarded. The laptop's existing verified
+Factory connection can supply Harness metadata when its local daemon is down.
+Switching the integration off restores the saved local-agent choices.
+
+The collector also supports the staged sibling checkout
+`pt-constellation-factory-alt-dev`. Refresh the control panel after updating;
+these source and settings changes require no new GNOME extension code.

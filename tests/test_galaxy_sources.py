@@ -20,6 +20,9 @@ class GalaxySourcesTest(unittest.TestCase):
             max_directories=20,
             display_agents=None,
             show_memory=True,
+            project_subfolders=False,
+            openharness=False,
+            harness_agent_limit=5,
         )
         self.scene = dict(
             schema="factory-observatory-wallpaper/v1",
