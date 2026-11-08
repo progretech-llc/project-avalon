@@ -72,3 +72,23 @@ Switching the integration off restores the saved local-agent choices.
 The collector also supports the staged sibling checkout
 `pt-constellation-factory-alt-dev`. Refresh the control panel after updating;
 these source and settings changes require no new GNOME extension code.
+
+
+## Projects with individual session agents
+
+The workstation uses Projects as the galaxy center and its visible immediate
+subfolders as solar systems. Avalon keeps Lyra, Mak, Progre and Codex visible
+alongside the five most recent individual OpenHarness sessions when
+`harness_sessions` and `openharness` are enabled in its source settings. Sessions
+retain separate identities even when they use the same framework. Their names,
+machines, states and activity times come from native Harness metadata. A stopped
+session can remain among the latest five; displaying it does not start it.
+
+Satellite mode follows reviewed file updates and observed Hindsight calls.
+Session folders supply context for asteroid movement; they do not count as file
+writes. Native receipt coverage is still limited to the Codex/Claude event parser.
+Other frameworks can retain and retrieve Hindsight memory without producing that
+receipt format, so a quiet satellite alone does not show whether memory worked.
+
+The installer repairs a dangling desktop-state symlink after a project move.
+It preserves an existing state directory or a link to another available directory.

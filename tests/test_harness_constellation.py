@@ -27,6 +27,22 @@ class HarnessConstellationTest(unittest.TestCase):
         self.assertEqual(failed, 0)
         self.assertEqual(len(hc.read_frameworks(1, run=run)[0]), 1)
 
+    def test_sessions_keep_same_framework_separate_and_preserve_named_agents(self):
+        def run(argv, **kwargs):
+            if argv[1] == 'machines':
+                return SimpleNamespace(stdout=json.dumps([dict(machineId='one')]))
+            return SimpleNamespace(stdout=json.dumps({'harnesses': [
+                dict(id=str(i), name='Worker '+str(i), agent='OpenCode', machine='One',
+                     lastActive=f'2026-11-07T20:0{i}:00Z') for i in range(6)]}))
+        rows, failed = hc.read_frameworks(5, sessions=True, run=run)
+        self.assertEqual([r['native_id'] for r in rows], ['5', '4', '3', '2', '1'])
+        self.assertEqual(len({r['id'] for r in rows}), 5)
+        scene = dict(nodes=[dict(id='host', kind='Host'),
+                           dict(id='agent:lyra', kind='Agent')], links=[], agent_activity=[])
+        hc.overlay(scene, rows)
+        self.assertEqual(scene['counts']['agents'], 6)
+        self.assertIn('lyra', scene['available_agents'])
+
     def test_unavailable_machine_keeps_reachable_frameworks(self):
         def run(argv, **kwargs):
             if argv[1] == 'machines':

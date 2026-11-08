@@ -115,6 +115,10 @@ def overlay(scene, events, owners=None):
             continue
         recent.append(target)
         entry['targets'] = list(dict.fromkeys([*recent, *entry.get('targets', [])]))[:7]
+        # The renderer accepts any Directory system for a satellite orbit.
+        # A memory visit moves the satellite without claiming a file write.
+        if event['kind'] == 'memory' and len(recent) == 1:
+            entry['last_modified_root'] = target
         scene['links'].append({'from': agent, 'to': target, 'color': nodes[agent]['color']})
     scene['agent_activity'] = list(activity.values())
     scene['resource_event_count'] = len(seen)

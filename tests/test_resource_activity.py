@@ -20,6 +20,14 @@ class ResourceActivityTests(unittest.TestCase):
             self.assertEqual(len(events), 1)
             self.assertEqual(events[0]['kind'], 'read')
 
+    def test_hindsight_visit_moves_satellite_without_file_write(self):
+        scene = dict(nodes=[dict(id='root:Hindsight', kind='Directory system'),
+                            dict(id='agent:codex', kind='Agent', color='#fff')], links=[],
+                     agent_activity=[dict(agent=1, targets=[], write_targets=[], last_modified_root=None)])
+        overlay(scene, [dict(agent_id='native', kind='memory', service='hindsight', at=time.time())], {'native': 'codex'})
+        self.assertEqual(scene['agent_activity'][0]['last_modified_root'], 0)
+        self.assertEqual(scene['agent_activity'][0]['write_targets'], [])
+
     def test_resource_targets_preserve_writes_and_require_native_owner(self):
         scene = dict(nodes=[dict(id='root:tools', kind='Directory system', path='/mnt/PT-Storage/Tools & Assets',
                                  root='Tools', x=0, y=0, z=0, color='#fff'),

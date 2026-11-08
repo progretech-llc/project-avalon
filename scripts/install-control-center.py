@@ -17,6 +17,9 @@ def main():
     state_home = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state"))
     state_home.mkdir(parents=True, exist_ok=True)
     link = state_home / "project-avalon"
+    if link.is_symlink() and not link.exists():
+        link.unlink()
+        link.symlink_to(state / "desktop", target_is_directory=True)
     if link.is_symlink():
         if link.resolve() != (state / "desktop").resolve():
             raise RuntimeError(

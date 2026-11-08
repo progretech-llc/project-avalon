@@ -922,7 +922,7 @@ $('galaxy-scan').addEventListener('click',()=>action(async()=>{const data=await 
 $('galaxy-sources-form').addEventListener('submit',event=>{event.preventDefault();action(async()=>{
   const roots=Array.from($('galaxy-root-list').children,row=>Object.fromEntries(Array.from(row.querySelectorAll('[data-root-field]'),field=>[field.dataset.rootField,field.value])));
   const selected=$('galaxy-agents-auto').checked?null:Array.from(document.querySelectorAll('[data-agent-identity]:checked'),field=>field.value);
-  const data=await api('/api/constellation/sources',{action:'save',revision:galaxySources.revision,settings:{roots,display_agents:$('galaxy-openharness').checked?galaxySources.settings.display_agents:selected,openharness:$('galaxy-openharness').checked,project_subfolders:$('galaxy-project-subfolders').checked,harness_agent_limit:Number($('galaxy-harness-agent-limit').value),max_files:Number($('galaxy-max-files').value),max_directories:Number($('galaxy-max-directories').value),show_memory:$('galaxy-show-memory').checked}});
+  const data=await api('/api/constellation/sources',{action:'save',revision:galaxySources.revision,settings:{...galaxySources.settings,roots,display_agents:$('galaxy-openharness').checked?galaxySources.settings.display_agents:selected,openharness:$('galaxy-openharness').checked,project_subfolders:$('galaxy-project-subfolders').checked,harness_agent_limit:Number($('galaxy-harness-agent-limit').value),max_files:Number($('galaxy-max-files').value),max_directories:Number($('galaxy-max-directories').value),show_memory:$('galaxy-show-memory').checked}});
   renderGalaxySources(data);watchGalaxySources({...data,busy:true});notice('Avalon agent and folder selection saved.','success');
 });});
 

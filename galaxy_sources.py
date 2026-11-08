@@ -56,6 +56,7 @@ def preferences(base):
         project_subfolders=True,
         openharness=False,
         harness_agent_limit=5,
+        harness_sessions=False,
     )
 
 
@@ -75,7 +76,7 @@ def validate(data, previous):
             raise ValueError("Invalid " + key.replace("_", " "))
     if type(data["show_memory"]) is not bool:
         raise ValueError("Choose whether to display the memory system")
-    for key in ("project_subfolders", "openharness"):
+    for key in ("project_subfolders", "openharness", "harness_sessions"):
         if key in data and type(data[key]) is not bool:
             raise ValueError("Choose whether to enable " + key)
     if "harness_agent_limit" in data and (type(data["harness_agent_limit"]) is not int or not 1 <= data["harness_agent_limit"] <= 100):
@@ -340,12 +341,20 @@ class GalaxySources:
             or self.original_scene()
         )
         effective = {**prefs, "roots": project_roots(prefs)}
-        result = filter_scene(source, set() if prefs["openharness"] else set(self.selected(prefs, self.roster)), effective)
+        selected = set(self.selected(prefs, self.roster))
+        if prefs["openharness"] and prefs.get("harness_sessions"):
+            selected = {"lyra", "mak", "progre", "codex"}
+        result = filter_scene(source, set() if prefs["openharness"] and not prefs.get("harness_sessions") else selected, effective)
+        if result and prefs.get("project_subfolders", True):
+            result["galaxy"] = {"label": "Projects", "path": str(PROJECTS)}
+            for node in result["nodes"]:
+                if node.get("kind") == "Host":
+                    node.update(name="Projects", path=str(PROJECTS))
         if result and prefs["openharness"]:
             from harness_constellation import read_frameworks, overlay as harness_overlay
             try:
-                self.frameworks, failed = read_frameworks(prefs["harness_agent_limit"], workstation=CONFIG.with_name("laptop-galaxy.json").is_file())
-                self.harness_notice = f" OpenHarness: {len(self.frameworks)} recent frameworks; {failed} machines unavailable."
+                self.frameworks, failed = read_frameworks(prefs["harness_agent_limit"], workstation=CONFIG.with_name("laptop-galaxy.json").is_file(), sessions=prefs.get("harness_sessions", False))
+                self.harness_notice = f" OpenHarness: {len(self.frameworks)} recent agents; {failed} machines unavailable."
             except (OSError, ValueError, subprocess.SubprocessError):
                 self.frameworks = []
                 self.harness_notice = " OpenHarness unavailable. Enable its connection or turn off the optional integration to show local agents."
@@ -355,9 +364,12 @@ class GalaxySources:
         if result:
             from resource_activity import read_events, read_owners, overlay
             try:
-                events = [] if prefs["openharness"] else read_events()
-                if events and not prefs["openharness"]:
-                    overlay(result, events, read_owners())
+                events = read_events()
+                if events:
+                    owners = read_owners()
+                    if prefs["openharness"] and prefs.get("harness_sessions"):
+                        owners.update({row["native_id"]: row["id"] for row in self.frameworks})
+                    overlay(result, events, owners)
             except (OSError, ValueError, subprocess.SubprocessError):
                 result['resource_activity_error'] = 'Native resource metadata unavailable'
             atomic_json(SCENE, result, durable=False)
@@ -433,6 +445,9 @@ class GalaxySources:
             **{k: prefs[k] for k in ("roots", "max_files", "max_directories")},
         }
         config["roots"] = project_roots(prefs)
+        if prefs.get("project_subfolders", True):
+            config["galaxy"] = {"label": "Projects", "path": str(PROJECTS)}
+            config["host_name"] = "Projects"
         if prefs["openharness"]:
             config["native_harness"] = False
         config["roots"] = sorted(
@@ -459,6 +474,9 @@ class GalaxySources:
         roster = candidates(self.original_scene(), base, discovered)
         config["display_agents"] = self.selected(prefs, roster)
         config["agents"] = [x["id"] for x in roster if x["current"]]
+        if prefs["openharness"] and prefs.get("harness_sessions"):
+            config["agents"] = config["display_agents"] = ["lyra", "mak", "progre", "codex"]
+            config["discover_agents"] = False
         if config.get("unlisted_agent") not in config["agents"]:
             config["unlisted_agent"] = ""
         atomic_json(snapshot, config)

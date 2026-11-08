@@ -11,7 +11,7 @@ import subprocess
 from resource_activity import safe_path
 
 
-def read_frameworks(limit=5, *, workstation=False, run=subprocess.run):
+def read_frameworks(limit=5, *, workstation=False, sessions=False, run=subprocess.run):
     def call(args, remote=False):
         command = ['harness', *args]
         if remote:
@@ -72,8 +72,12 @@ def read_frameworks(limit=5, *, workstation=False, run=subprocess.run):
             timestamp = timestamp.timestamp()
         except (AttributeError, ValueError, TypeError):
             continue
-        identity = 'harness-' + hashlib.sha256(name.strip().casefold().encode()).hexdigest()[:16]
-        clean.append(dict(id=identity, name=name.strip(), current=True, sources=['OpenHarness · latest framework activity'],
+        native_id = row.get('id')
+        if sessions and (not isinstance(native_id, str) or not native_id):
+            continue
+        key = (str(row.get('machine', '')) + ':' + native_id) if sessions else name.strip().casefold()
+        identity = 'harness-' + hashlib.sha256(key.encode()).hexdigest()[:16]
+        clean.append(dict(id=identity, native_id=native_id, name=str(row.get('name') or name).strip()[:80] if sessions else name.strip(), current=True, sources=['OpenHarness · latest framework activity'],
                           machine=str(row.get('machine', ''))[:120], state=str(row.get('state', 'unknown'))[:40],
                           updated_at=updated, timestamp=timestamp, folder=row.get('folder', '')))
     latest = {}
@@ -103,7 +107,7 @@ def overlay(scene, frameworks):
             entry['targets'] = entry['context_targets'] = [target]
             scene['links'].append({'from': agent, 'to': target, 'color': color})
         scene.setdefault('agent_activity', []).append(entry)
-    scene.setdefault('counts', {})['agents'] = len(frameworks)
-    scene['available_agents'] = [row['id'] for row in frameworks]
+    scene.setdefault('counts', {})['agents'] = sum(n.get('kind') == 'Agent' for n in nodes)
+    scene['available_agents'] = [n['id'].removeprefix('agent:') for n in nodes if n.get('kind') == 'Agent']
     scene['source'] = 'openharness-framework-session-metadata'
     return scene
