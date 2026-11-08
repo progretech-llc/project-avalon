@@ -55,6 +55,7 @@ The wallpaper, control panel, local speech/camera paths and runtime bridges are 
 - [Delivery and qualification](docs/DELIVERY.md)
 - [Native LampOS host](docs/LAMPOS.md)
 - [Independent galaxy appearance](docs/CONSTELLATION.md)
+- [Constellation / OpenHarness update techspec](Avalon_Constellation_OpenHarness_Techspec.html)
 - [Asset provenance](docs/ASSETS.md) and [third-party notices](THIRD_PARTY_NOTICES.md)
 
 To report a problem, [open an issue](https://github.com/progretech-llc/project-avalon/issues) with your Ubuntu/GNOME version, selected runtime and reproducible steps. Remove chat history, camera/audio content and credentials from diagnostics.
