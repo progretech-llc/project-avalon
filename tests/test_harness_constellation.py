@@ -74,6 +74,10 @@ class HarnessConstellationTest(unittest.TestCase):
             prefs = dict(roots=[dict(label='Saved', path='/saved')], project_subfolders=True)
             with patch.object(gs, 'PROJECTS', projects):
                 self.assertEqual([r['label'] for r in gs.project_roots(prefs)], ['development', 'quality'])
+                excluded = {**prefs, 'excluded_project_roots': [str(projects/'quality')]}
+                self.assertEqual([r['label'] for r in gs.project_roots(excluded)], ['development'])
+                self.assertEqual(len(gs.project_roots(excluded, include_hidden=True)), 2)
+                self.assertTrue((projects/'quality').is_dir())
                 self.assertEqual(gs.project_roots({**prefs, 'project_subfolders': False}), prefs['roots'])
             with patch.object(gs, 'PROJECTS', projects / 'unavailable'):
                 self.assertEqual(gs.project_roots(prefs), prefs['roots'])

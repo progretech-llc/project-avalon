@@ -851,6 +851,7 @@ function syncHarnessControls(){
   $('galaxy-local-agents').hidden=enabled;
 }
 $('galaxy-openharness').addEventListener('change',syncHarnessControls);
+$('galaxy-project-subfolders').addEventListener('change',()=>{$('galaxy-project-folders').hidden=!$('galaxy-project-subfolders').checked;});
 let galaxySources=null, galaxySourcesDirty=false, galaxySourcesTimer=null, galaxyRootSequence=0;
 function syncGalaxySourceControls(data) {
   $('galaxy-reload').disabled=!authorized||busy;
@@ -880,8 +881,26 @@ function renderGalaxySources(data) {
   galaxySources=data;galaxySourcesDirty=false;$('galaxy-sources-form').hidden=false;
   $('galaxy-openharness').checked=data.settings.openharness??false;
   $('galaxy-harness-agent-limit').value=data.settings.harness_agent_limit??5;
+  document.querySelector('label[for="galaxy-harness-agent-limit"]').textContent=data.settings.harness_sessions?'Recent sessions to display':'Recent frameworks to display';
+  $('galaxy-harness-description').textContent=data.settings.harness_sessions?'Keep Lyra, Mak, Progre and Codex alongside the latest individual OpenHarness sessions. Asteroid movement follows recent session, memory and board activity.':'Display each framework once using its most recent session. Movement follows reported project context.';
   $('galaxy-project-subfolders').checked=data.settings.project_subfolders??true;
   syncHarnessControls();
+  $('galaxy-project-folders').replaceChildren();
+  for(const folder of data.project_folders??[]){
+    const label=document.createElement('label');label.className='checkbox-label';
+    const check=document.createElement('input');check.type='checkbox';check.dataset.projectFolder=folder.path;check.checked=folder.visible;
+    check.addEventListener('change',()=>{galaxySourcesDirty=true;});
+    label.append(check,document.createTextNode(folder.label));$('galaxy-project-folders').append(label);
+  }
+  $('galaxy-project-folders').hidden=!$('galaxy-project-subfolders').checked;
+  $('galaxy-kanboard').checked=data.settings.kanboard??false;
+  const cards=data.board?.cards??[];
+  $('galaxy-board-status').textContent=data.board?.error??(data.settings.kanboard?`${cards.length} board cards · Quality: ${cards.filter(c=>c.stage==='quality').length} · Production: ${cards.filter(c=>c.stage==='production').length}`:'Kanboard planets are off.');
+  $('galaxy-board-cards').replaceChildren();
+  if(data.settings.kanboard)for(const card of cards){
+    const line=document.createElement('p'),link=document.createElement('a');link.textContent=`#${card.id} · ${card.column} · ${card.title}`;
+    link.href=`http://127.0.0.1:18765/?controller=TaskViewController&action=show&task_id=${card.id}&project_id=1`;link.target='_blank';link.rel='noopener';line.append(link);$('galaxy-board-cards').append(line);
+  }
   $('galaxy-harness-frameworks').replaceChildren();
   for(const framework of data.frameworks??[]){
     const row=document.createElement('p');row.className='field-note';row.textContent=framework.name+' · '+framework.machine+' · '+framework.state+' · '+framework.updated_at;$('galaxy-harness-frameworks').append(row);
@@ -922,7 +941,7 @@ $('galaxy-scan').addEventListener('click',()=>action(async()=>{const data=await 
 $('galaxy-sources-form').addEventListener('submit',event=>{event.preventDefault();action(async()=>{
   const roots=Array.from($('galaxy-root-list').children,row=>Object.fromEntries(Array.from(row.querySelectorAll('[data-root-field]'),field=>[field.dataset.rootField,field.value])));
   const selected=$('galaxy-agents-auto').checked?null:Array.from(document.querySelectorAll('[data-agent-identity]:checked'),field=>field.value);
-  const data=await api('/api/constellation/sources',{action:'save',revision:galaxySources.revision,settings:{...galaxySources.settings,roots,display_agents:$('galaxy-openharness').checked?galaxySources.settings.display_agents:selected,openharness:$('galaxy-openharness').checked,project_subfolders:$('galaxy-project-subfolders').checked,harness_agent_limit:Number($('galaxy-harness-agent-limit').value),max_files:Number($('galaxy-max-files').value),max_directories:Number($('galaxy-max-directories').value),show_memory:$('galaxy-show-memory').checked}});
+  const data=await api('/api/constellation/sources',{action:'save',revision:galaxySources.revision,settings:{...galaxySources.settings,excluded_project_roots:Array.from(document.querySelectorAll('[data-project-folder]')).filter(x=>!x.checked).map(x=>x.dataset.projectFolder),kanboard:$('galaxy-kanboard').checked,roots,display_agents:$('galaxy-openharness').checked?galaxySources.settings.display_agents:selected,openharness:$('galaxy-openharness').checked,project_subfolders:$('galaxy-project-subfolders').checked,harness_agent_limit:Number($('galaxy-harness-agent-limit').value),max_files:Number($('galaxy-max-files').value),max_directories:Number($('galaxy-max-directories').value),show_memory:$('galaxy-show-memory').checked}});
   renderGalaxySources(data);watchGalaxySources({...data,busy:true});notice('Avalon agent and folder selection saved.','success');
 });});
 

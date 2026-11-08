@@ -517,13 +517,14 @@
             <p id="galaxy-status" role="status" class="field-note"></p>
             <section class="galaxy-sources" aria-labelledby="galaxy-sources-title">
               <h3 id="galaxy-sources-title">Agents and folders in this galaxy</h3>
-              <p class="field-note">These are Avalon display choices. They do not start agents, grant file access or change the standalone Constellation app. Only paths mentioned in reviewed memory become stars; folder contents are not scanned.</p>
+              <p class="field-note">These are Avalon display choices. They do not start agents, grant file access or change the standalone Constellation app. Reviewed file activity and optional Kanboard updates become planets; folder contents are not scanned.</p>
               <p id="galaxy-source-status" class="field-note" role="status">Loading sources…</p>
               <div class="source-actions"><button type="button" id="galaxy-scan" class="quiet" disabled>Refresh identities and scene</button><button type="button" id="galaxy-reload" class="quiet" disabled>Reload saved selections</button></div>
               <form id="galaxy-sources-form" hidden>
                 <fieldset><legend>Displayed agents</legend>
                   <label class="checkbox-label"><input id="galaxy-openharness" type="checkbox" aria-controls="galaxy-harness-options galaxy-local-agents" /> Integration with OpenHarness (optional)</label>
-                  <p class="field-note">Display the latest active agent frameworks across your OpenHarness machines instead of this computer’s configured agents. Each framework appears once, using its most recent session. Movement follows reported project context.</p>
+                  <p id="galaxy-harness-description" class="field-note">Display the latest active agent frameworks across your OpenHarness machines instead of this computer’s configured agents. Each framework appears once, using its most recent session. Movement follows reported project context.</p>
+                  <p class="field-note">Recent activity fades over 48 hours. The session state below shows whether a harness is still running.</p>
                   <div id="galaxy-harness-options" hidden><label for="galaxy-harness-agent-limit">Recent frameworks to display</label><input id="galaxy-harness-agent-limit" type="number" min="1" max="100" value="5" required /><p class="field-note">Default: 5. Unreachable machines are reported; their activity may be unavailable.</p><div id="galaxy-harness-frameworks" class="galaxy-agent-list" aria-live="polite"></div></div>
                   <div id="galaxy-local-agents">
                   <label class="checkbox-label"><input id="galaxy-agents-auto" type="checkbox" /> Show current configured identities automatically</label>
@@ -534,9 +535,12 @@
                 </div></fieldset>
                 <fieldset><legend>Folders as solar systems</legend><p class="field-note">Add up to 12 folders. Rename or remove a system here; files and folders stay untouched. Previously saved offline folders can remain selected.</p>
                   <label class="checkbox-label"><input id="galaxy-project-subfolders" type="checkbox" /> Use PT-Storage Projects subfolders as solar systems when available</label>
-                  <p class="field-note">The immediate folders inside /mnt/PT-Storage/Projects become systems. Your saved folders below are used when the shared folder is unavailable or this option is off.</p>
+                  <p class="field-note">The immediate folders inside /mnt/PT-Storage/Projects become systems. Uncheck a discovered folder below to hide its system. Saved manual folders are used when this option is off or Projects is unavailable.</p>
+                  <div id="galaxy-project-folders" class="galaxy-agent-list"></div>
                   <div id="galaxy-root-list"></div>
                   <div class="source-actions"><button id="galaxy-root-add" type="button" class="quiet">Add folder path</button><button id="galaxy-root-browse" type="button" class="quiet">Choose folder…</button></div>
+                  <label class="checkbox-label"><input id="galaxy-kanboard" type="checkbox" /> Show Kanboard cards and recent actions as planets</label>
+                  <p id="galaxy-board-status" class="field-note" role="status"></p><div id="galaxy-board-cards"></div>
                   <div class="source-limits"><div><label for="galaxy-max-files">Remembered files · maximum</label><input id="galaxy-max-files" type="number" min="1" max="1000" required /></div><div><label for="galaxy-max-directories">Remembered subfolders · maximum</label><input id="galaxy-max-directories" type="number" min="1" max="200" required /></div></div>
                   <label class="checkbox-label"><input id="galaxy-show-memory" type="checkbox" /> Show the memory system and memory planets</label>
                 </fieldset>

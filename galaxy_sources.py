@@ -57,6 +57,9 @@ def preferences(base):
         openharness=False,
         harness_agent_limit=5,
         harness_sessions=False,
+        excluded_project_roots=[],
+        activity_memory_banks={},
+        kanboard=False,
     )
 
 
@@ -81,6 +84,20 @@ def validate(data, previous):
             raise ValueError("Choose whether to enable " + key)
     if "harness_agent_limit" in data and (type(data["harness_agent_limit"]) is not int or not 1 <= data["harness_agent_limit"] <= 100):
         raise ValueError("Choose between 1 and 100 frameworks")
+    excluded = data.get("excluded_project_roots", [])
+    if not isinstance(excluded, list) or len(excluded) > 200 or any(
+        not isinstance(x, str) or not Path(x).is_absolute() or Path(x).parent != PROJECTS
+        or Path(x).name.startswith('.') for x in excluded
+    ):
+        raise ValueError("Choose visible Projects subfolders")
+    banks = data.get("activity_memory_banks", {})
+    if not isinstance(banks, dict) or len(banks) > 100 or any(
+        not AGENT_ID.fullmatch(k) or not isinstance(v, str) or not 1 <= len(v) <= 512
+        or any(ord(c) < 32 for c in v) for k, v in banks.items()
+    ):
+        raise ValueError("Invalid activity bank mapping")
+    if type(data.get("kanboard", False)) is not bool:
+        raise ValueError("Choose whether to show Kanboard")
     roots = data["roots"]
     if not isinstance(roots, list) or not 1 <= len(roots) <= 12:
         raise ValueError("Choose between 1 and 12 folders")
@@ -118,16 +135,18 @@ def validate(data, previous):
 PROJECTS = Path("/mnt/PT-Storage/Projects")
 
 
-def project_roots(prefs):
+def project_roots(prefs, *, include_hidden=False):
     if not prefs.get("project_subfolders", True) or not PROJECTS.is_dir():
         return prefs["roots"]
     from resource_activity import safe_path
     roots = [dict(label=path.name, path=str(path)) for path in sorted(PROJECTS.iterdir())
              if not path.is_symlink() and path.is_dir() and safe_path(str(path)) is not None]
     # The existing collector accepts at most twelve systems.
+    if not include_hidden:
+        roots = [r for r in roots if r["path"] not in prefs.get("excluded_project_roots", [])]
     if len(roots) > 12:
         raise ValueError("PT-Storage Projects has more than 12 solar systems; choose folders manually")
-    return roots or prefs["roots"]
+    return roots
 
 
 def candidates(scene, base, discovered):
@@ -262,6 +281,8 @@ class GalaxySources:
         self.thread = None
         self.frameworks = []
         self.harness_notice = ""
+        self.memory_activity = {}
+        self.board_snapshot = {}
 
     def base(self):
         return read_json(SOURCE_CONFIG, {})
@@ -283,6 +304,9 @@ class GalaxySources:
             selected = set(self.selected(prefs, roster))
             return dict(
                 settings=prefs,
+                project_folders=[{**r, "visible": r["path"] not in prefs.get("excluded_project_roots", [])}
+                                 for r in project_roots({**prefs, "project_subfolders": True}, include_hidden=True)],
+                board={k: v for k, v in self.board_snapshot.items() if k != "events"},
                 frameworks=[{k: row[k] for k in ("name", "machine", "state", "updated_at")} for row in self.frameworks],
                 revision=revision(prefs),
                 agents=[{**x, "selected": x["id"] in selected} for x in roster],
@@ -372,6 +396,13 @@ class GalaxySources:
                     overlay(result, events, owners)
             except (OSError, ValueError, subprocess.SubprocessError):
                 result['resource_activity_error'] = 'Native resource metadata unavailable'
+            activity = dict(self.memory_activity)
+            if prefs.get("kanboard") and self.board_snapshot:
+                from kanboard_planets import overlay as board_overlay
+                board_overlay(result, self.board_snapshot, activity)
+                result["memory_source"]["browser_script"] = str(ROOT / "activity_browser.py")
+            from recent_activity import overlay as recent_overlay
+            recent_overlay(result, activity)
             atomic_json(SCENE, result, durable=False)
 
     def request_refresh(self):
@@ -445,6 +476,11 @@ class GalaxySources:
             **{k: prefs[k] for k in ("roots", "max_files", "max_directories")},
         }
         config["roots"] = project_roots(prefs)
+        if not config["roots"]:
+            with self.lock:
+                self.publish_filtered(prefs)
+                self.notice = "All Projects folder systems are hidden."
+            return
         if prefs.get("project_subfolders", True):
             config["galaxy"] = {"label": "Projects", "path": str(PROJECTS)}
             config["host_name"] = "Projects"
@@ -471,6 +507,26 @@ class GalaxySources:
             timeout=40,
         )
         discovered = json.loads(discovery.stdout)
+        banks = prefs.get("activity_memory_banks", {})
+        if banks:
+            code = ("import json;from hindsight_api import _get;from config import load_config;"
+                    "source=load_config()['memory'];result={};"
+                    "\nfor agent,bank in " + repr(banks) + ".items():\n"
+                    " try:\n  from urllib.parse import quote;d=_get(source,'/v1/default/banks/'+quote(bank,safe='')+'/stats');"
+                    "result[agent]={'at':d.get('last_memory_write_at'),'source':'Hindsight'}\n"
+                    " except (OSError,ValueError): pass\nprint(json.dumps(result))")
+            try:
+                presence = subprocess.run([python, "-c", code], cwd=ENGINE, env=env,
+                                          capture_output=True, text=True, check=True, timeout=45)
+                self.memory_activity = json.loads(presence.stdout)
+            except (OSError, ValueError, subprocess.SubprocessError):
+                self.memory_activity = {}
+        if prefs.get("kanboard"):
+            from kanboard_planets import collect
+            try:
+                self.board_snapshot = collect()
+            except (OSError, ValueError, RuntimeError):
+                self.board_snapshot = {"error": "Kanboard refresh unavailable", "cards": [], "events": []}
         roster = candidates(self.original_scene(), base, discovered)
         config["display_agents"] = self.selected(prefs, roster)
         config["agents"] = [x["id"] for x in roster if x["current"]]

@@ -92,3 +92,34 @@ receipt format, so a quiet satellite alone does not show whether memory worked.
 
 The installer repairs a dangling desktop-state symlink after a project move.
 It preserves an existing state directory or a link to another available directory.
+
+
+## Folder visibility, recent activity and Kanboard
+
+Automatic Projects folders have their own visibility checkboxes in Agents and
+folders. Uncheck a folder and apply to hide its system; the folder stays intact.
+Saved manual folders still apply when automatic discovery is off. The old
+`Projects/project-avalon` runtime stub is hidden on this workstation.
+
+Asteroid movement uses recent native session timestamps, configured Hindsight
+bank write timestamps and actual Kanboard event authors. Recent activity stays
+visible for 48 hours and fades with age. Assignment alone does not count as work.
+These movement targets do not add file-write lights or change satellite write
+history. Memory activity reads bank statistics only, without conversation text.
+
+Enable Kanboard planets to show cards and the latest twenty deliverable actions.
+Quality and Release Approval map to quality; Released maps to production; other
+work columns map to development. A board status is not proof of a deployment.
+Hidden folder systems also hide their board planets. The panel lists card links
+and stage counts; empty stages stay empty until the board has matching cards.
+
+Board planets reuse the existing memory-planet drawing and click channel, with
+Kanboard source metadata and a bounded card opener. Clicking opens the actual
+card; Hindsight planets retain their existing viewer. The current native tooltip
+calls both types memories, and Alt+click on a board planet inherits the Hindsight
+focus behavior. Alt+click on the folder system focuses its board and file planets.
+No GNOME extension reload is needed for this increment.
+
+The collector uses the installed member API client for read-only task and event
+queries. Only titles, statuses, authors, IDs and timestamps enter the scene.
+Descriptions, comment bodies, attachments and API credentials are excluded.
