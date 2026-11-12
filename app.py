@@ -533,7 +533,11 @@ def main():
                     "disconnected", "Choose an available local model and connect."
                 )
 
-    threading.Thread(target=start_selected, daemon=True).start()
+    # Opening the control panel while the presence is Off must not resume a
+    # language-model session in the background. The UI still offers Connect.
+    from avalon import presence_enabled
+    if presence_enabled() is True:
+        threading.Thread(target=start_selected, daemon=True).start()
     atexit.register(controller.close)
 
     def stop(*_):

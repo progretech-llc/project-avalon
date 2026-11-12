@@ -13,17 +13,25 @@ import http.cookiejar
 ROOT = Path(__file__).resolve().parent
 
 
-def stop_when_off():
-    """Release the native backend when its last owned panel exits while Off."""
+def presence_enabled():
+    """Return enabled/disabled/unknown from the installed native wallpaper state."""
     checked = False
+    unknown = False
     for uuid in ('avalon@progretech.com', 'factory-observatory@progretech.com'):
         result = subprocess.run(['gnome-extensions', 'info', uuid], capture_output=True,
                                 text=True, timeout=5, env={**os.environ, 'LC_ALL': 'C'})
         if result.returncode == 0:
             checked = True
             if 'Enabled: Yes' in result.stdout:
-                return False
-    if not checked:
+                return True
+        else:
+            unknown = True
+    return False if checked and not unknown else None
+
+
+def stop_when_off():
+    """Release the native backend when its last owned panel exits while Off."""
+    if presence_enabled() is not False:
         return False
     subprocess.run(['systemctl', '--user', 'stop', '--no-block', 'project-avalon.service'], check=True)
     return True
