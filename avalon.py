@@ -13,6 +13,29 @@ import http.cookiejar
 ROOT = Path(__file__).resolve().parent
 
 
+def stop_when_off():
+    """Release the native backend when its last owned panel exits while Off."""
+    checked = False
+    for uuid in ('avalon@progretech.com', 'factory-observatory@progretech.com'):
+        result = subprocess.run(['gnome-extensions', 'info', uuid], capture_output=True,
+                                text=True, timeout=5, env={**os.environ, 'LC_ALL': 'C'})
+        if result.returncode == 0:
+            checked = True
+            if 'Enabled: Yes' in result.stdout:
+                return False
+    if not checked:
+        return False
+    subprocess.run(['systemctl', '--user', 'stop', '--no-block', 'project-avalon.service'], check=True)
+    return True
+
+
+def panel(argv):
+    try:
+        return subprocess.call(argv)
+    finally:
+        stop_when_off()
+
+
 def main():
     subprocess.run(
         ["systemctl", "--user", "start", "project-avalon.service"], check=True
@@ -61,8 +84,7 @@ def main():
     elif "--panel" in sys.argv:
         profile = ROOT / ".runtime/panel-browser"
         profile.mkdir(mode=0o700, exist_ok=True)
-        os.execv(
-            "/usr/bin/google-chrome",
+        panel(
             [
                 "google-chrome",
                 "--user-data-dir=" + str(profile),

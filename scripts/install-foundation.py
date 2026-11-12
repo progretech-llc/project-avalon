@@ -25,12 +25,16 @@ def main():
         run('gnome-extensions','install','--force',str(package/'factory-observatory@progretech.com.shell-extension.zip'))
     data=Path(os.environ.get('XDG_DATA_HOME',Path.home()/'.local/share'))
     config=Path(os.environ.get('XDG_CONFIG_HOME',Path.home()/'.config'))
+    launcher=Path.home()/'.local/bin/project-avalon'
+    launcher.parent.mkdir(parents=True,exist_ok=True)
+    launcher.write_text('#!/bin/sh\nexec /usr/bin/python3 '+repr(str(ROOT/'avalon.py'))+' "$@"\n')
+    launcher.chmod(0o755)
     app=data/'applications/project-avalon.desktop';app.parent.mkdir(parents=True,exist_ok=True)
     app.write_text(f'''[Desktop Entry]
 Type=Application
 Name=Project Avalon
 Comment=Open the Avalon Presence Control Center
-Exec=/usr/bin/python3 "{ROOT}/avalon.py"
+Exec={launcher}
 Icon=preferences-desktop-wallpaper
 Terminal=false
 Categories=Utility;Settings;

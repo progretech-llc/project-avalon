@@ -45,7 +45,7 @@ Type=simple
 WorkingDirectory={ROOT}
 ExecStart={ROOT}/.venv/bin/python {ROOT}/app.py
 Environment=AVALON_STATE_DIR={state}
-Restart=on-failure
+Restart=no
 RestartSec=3
 TimeoutStopSec=15
 KillMode=control-group
@@ -83,7 +83,7 @@ PartOf=project-avalon.service
 [Service]
 Type=simple
 ExecStart={ROOT}/.tools/avalon-runtime --state {state}/agent
-Restart=on-failure
+Restart=no
 RestartSec=3
 TimeoutStopSec=5
 KillMode=control-group
